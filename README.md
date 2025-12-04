@@ -70,15 +70,18 @@ http://localhost:8080
 
 ```
 HaNas/
-├── app.go          # Main backend logic
-├── index.html      # Web interface
-├── index.js        # Frontend logic
-├── i18n.js         # Internationalization
+├── server/         # Backend server files
+│   ├── app.go      # Main backend logic
+│   ├── go.mod      # Go module dependencies
+│   ├── index.html  # Web interface
+│   ├── index.js    # Frontend logic
+│   └── i18n.js     # Internationalization
 ├── client/         # Native client applications
 │   └── HaNas for Mac/  # macOS native client
 ├── data/           # File storage (created automatically)
 ├── thumbnails/     # Thumbnail cache
-└── database.db     # SQLite database (created automatically)
+├── database.db     # SQLite database (created automatically)
+└── hanas           # Compiled server binary
 ```
 
 ## Technical Details
@@ -155,16 +158,6 @@ MIT License
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Roadmap
-
-- [ ] User authentication
-- [ ] File sharing with links
-- [ ] Thumbnail generation for images/videos
-- [ ] Search functionality
-- [ ] Bulk operations
-- [ ] Zip download for folders
-- [ ] Dark mode
 
 ## Troubleshooting
 

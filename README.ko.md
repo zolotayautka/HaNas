@@ -70,15 +70,18 @@ http://localhost:8080
 
 ```
 HaNas/
-├── app.go          # 메인 백엔드 로직
-├── index.html      # 웹 인터페이스
-├── index.js        # 프론트엔드 로직
-├── i18n.js         # 국제화
+├── server/         # 백엔드 서버 파일
+│   ├── app.go      # 메인 백엔드 로직
+│   ├── go.mod      # Go 모듈 의존성
+│   ├── index.html  # 웹 인터페이스
+│   ├── index.js    # 프론트엔드 로직
+│   └── i18n.js     # 국제화
 ├── client/         # 네이티브 클라이언트 애플리케이션
 │   └── HaNas for Mac/  # macOS 네이티브 클라이언트
 ├── data/           # 파일 저장소 (자동 생성)
 ├── thumbnails/     # 썸네일 캐시
-└── database.db     # SQLite 데이터베이스 (자동 생성)
+├── database.db     # SQLite 데이터베이스 (자동 생성)
+└── hanas           # 컴파일된 서버 바이너리
 ```
 
 ## 기술 세부사항
@@ -155,16 +158,6 @@ MIT License
 ## 기여
 
 기여를 환영합니다! Pull Request를 제출해 주세요.
-
-## 로드맵
-
-- [ ] 사용자 인증
-- [ ] 링크를 통한 파일 공유
-- [ ] 이미지/비디오 썸네일 생성
-- [ ] 검색 기능
-- [ ] 일괄 작업
-- [ ] 폴더 Zip 다운로드
-- [ ] 다크 모드
 
 ## 문제 해결
 
