@@ -30,7 +30,9 @@ struct FileListView: View {
             .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 350)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
-                    Button(action: viewModel.refreshTree) {
+                    Button(action: {
+                        viewModel.refreshTree(currentFolderID: selectedFolderID)
+                    }) {
                         Label(NSLocalizedString("refresh", comment: ""), systemImage: "arrow.clockwise")
                     }
                 }
@@ -62,6 +64,11 @@ struct FileListView: View {
         }
         .onAppear {
             viewModel.loadRootFolder()
+        }
+        .onChange(of: viewModel.rootNode) { newRoot in
+            if selectedFolderID == nil, let root = newRoot {
+                selectedFolderID = root.id
+            }
         }
         .onChange(of: selectedFolderID) { newID in
             selectedFile = nil
@@ -440,7 +447,8 @@ struct FolderTreeView: View {
     var body: some View {
         if node.isDir {
             DisclosureGroup(isExpanded: $isExpanded) {
-                if let children = node.ko?.filter({ $0.isDir }) {
+                let loadedNode = viewModel.loadedFolders[node.id] ?? node
+                if let children = loadedNode.ko?.filter({ $0.isDir }) {
                     ForEach(children, id: \.id) { child in
                         FolderTreeView(
                             node: child,
@@ -464,6 +472,14 @@ struct FolderTreeView: View {
                 .buttonStyle(.plain)
             }
             .tag(node.id as Int?)
+            .onAppear {
+                viewModel.loadFolder(id: node.id, forceRefresh: false)
+            }
+            .onChange(of: isExpanded) { expanded in
+                if expanded {
+                    viewModel.loadFolder(id: node.id, forceRefresh: false)
+                }
+            }
         }
     }
 }
@@ -795,9 +811,31 @@ class FileListViewModel: ObservableObject {
         return loadedFolders[id] ?? findNodeInTree(rootNode, id: id)
     }
     
-    func refreshTree() {
+    func refreshTree(currentFolderID: Int? = nil) {
+        let folderToReload = currentFolderID
         loadedFolders.removeAll()
-        loadRootFolder()
+        isLoadingTree = true
+        errorMessage = nil
+        Task {
+            do {
+                let node = try await HaNasAPI.shared.getNode()
+                await MainActor.run {
+                    self.rootNode = node
+                    self.loadedFolders[node.id] = node
+                    self.isLoadingTree = false
+                    
+                    // 현재 선택된 폴더가 있으면 다시 로드
+                    if let folderId = folderToReload, folderId != node.id {
+                        self.loadFolder(id: folderId, forceRefresh: true)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = String(format: NSLocalizedString("cannot_load_data_with_error", comment: ""), error.localizedDescription)
+                    self.isLoadingTree = false
+                }
+            }
+        }
     }
     
     private func updateNodeInTree(_ newNode: Node) {

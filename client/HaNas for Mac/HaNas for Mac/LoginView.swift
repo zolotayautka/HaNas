@@ -1,10 +1,3 @@
-//
-//  LoginView.swift
-//  HaNas for Mac
-//
-//  Created by 신석주 on 12/4/25.
-//
-
 import SwiftUI
 
 struct LoginView: View {
@@ -63,8 +56,6 @@ struct LoginView: View {
                     .foregroundColor(.red)
                     .padding(.top, 5)
             }
-            
-            // 로그인/회원가입 버튼
             Button(action: isRegisterMode ? attemptRegister : attemptLogin) {
                 if isLoading {
                     ProgressView()
@@ -80,8 +71,6 @@ struct LoginView: View {
             .controlSize(.large)
             .disabled(isLoading || serverURL.isEmpty || username.isEmpty || password.isEmpty)
             .padding(.top, 10)
-            
-            // 모드 전환 버튼
             Button(action: {
                 isRegisterMode.toggle()
                 showError = false
@@ -93,7 +82,6 @@ struct LoginView: View {
                     .font(.caption)
             }
             .buttonStyle(.plain)
-            
             Spacer()
         }
         .padding(40)
@@ -155,22 +143,18 @@ struct LoginView: View {
         isLoading = true
         showError = false
         errorMessage = ""
-        
         let api = HaNasAPI.shared
         api.setBaseURL(serverURL)
         
         Task {
             do {
                 let response = try await api.register(username: username, password: password)
-                
                 if response.success {
-                    // 회원가입 성공 후 자동 로그인
                     let saved = ConfigManager.shared.saveConfig(
                         serverURL: serverURL,
                         username: username,
                         password: password
                     )
-                    
                     if saved {
                         await MainActor.run {
                             isLoading = false
