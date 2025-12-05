@@ -5,8 +5,6 @@
   else if(userLang.startsWith('ko')) lang = 'ko';
   else lang = 'en';
   const t = (key) => i18n[lang][key] || key;
-  
-  // Auth elements
   const authView = document.getElementById('authView');
   const mainView = document.getElementById('mainView');
   const authForm = document.getElementById('authForm');
@@ -18,8 +16,6 @@
   const passwordInput = document.getElementById('password');
   const userDisplay = document.getElementById('userDisplay');
   const btnLogout = document.getElementById('btnLogout');
-  
-  // Main app elements (declare early for use in functions)
   const listBody = document.getElementById('listBody');
   const btnHome = document.getElementById('btnHome');
   const btnUp = document.getElementById('btnUp');
@@ -39,12 +35,9 @@
   const status = document.getElementById('status');
   const modalBack = document.getElementById('modalBack');
   const modalRoot = document.getElementById('modal');
-  
   let isLoginMode = true;
   let currentUser = null;
   let currentNode = null;
-  
-  // Update auth UI based on mode
   function updateAuthUI() {
     if(isLoginMode) {
       authTitle.textContent = t('login');
@@ -60,25 +53,19 @@
       passwordInput.setAttribute('autocomplete', 'new-password');
     }
   }
-  
-  // Toggle between login and register
   authToggleLink.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     updateAuthUI();
     authForm.reset();
   });
-  
-  // Handle auth form submission
   authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
-    
     if(!username || !password) {
       alert(t('fillFields'));
       return;
     }
-    
     const endpoint = isLoginMode ? '/login' : '/register';
     try {
       authSubmit.disabled = true;
@@ -88,7 +75,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      
       if(!res.ok) {
         const errText = await res.text();
         if(res.status === 409) {
@@ -98,42 +84,37 @@
         }
         throw new Error(t('authFailed'));
       }
-      
       const data = await res.json();
       currentUser = { username: data.username, id: data.user_id };
       showMainView();
-      await loadNode();
     } catch(err) {
       alert(err.message);
       authSubmit.disabled = false;
       updateAuthUI();
     }
   });
-  
-  // Logout handler
   btnLogout.addEventListener('click', async () => {
     try {
       await fetch('/logout', { method: 'POST' });
     } catch(e) {}
     currentUser = null;
+    authSubmit.disabled = false;
     showAuthView();
+    updateAuthUI();
   });
-  
   function showAuthView() {
     authView.classList.remove('hidden');
     mainView.classList.add('hidden');
     authForm.reset();
   }
-  
-  function showMainView() {
+  async function showMainView() {
     authView.classList.add('hidden');
     mainView.classList.remove('hidden');
     if(currentUser) {
       userDisplay.textContent = currentUser.username;
     }
+    await loadNode();
   }
-  
-  // Check if user is already logged in
   async function checkAuth() {
     try {
       const res = await fetch('/me');
@@ -147,18 +128,13 @@
     showAuthView();
     return false;
   }
-  
   updateAuthUI();
-  const isAuthenticated = await checkAuth();
-  if(!isAuthenticated) return;
-  
-  // Modal functions
+  await checkAuth();
   function closeModal(){ modalBack.style.display='none'; modalRoot.innerHTML = ''; }
   function openModal(content){ modalRoot.innerHTML = content; modalBack.style.display='flex'; }
   modalBack.addEventListener('click', (e)=>{ if(e.target === modalBack) closeModal(); });
   function fmtSize(n){ if(!n && n !== 0) return '-'; const u=['B','KB','MB','GB']; let i=0; let v=n; while(v>=1024 && i<u.length-1){ v/=1024; i++; } return (Math.round(v*10)/10) + ' ' + u[i]; }
   function safe(s){ return (''+s).replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  
   function isMediaByName(name){
     if(!name) return false;
     const ext = (name.split('.').pop() || '').toLowerCase();
@@ -202,7 +178,6 @@
     const closeBtn = document.getElementById('closePlayer');
     closeBtn.addEventListener('click', ()=>{ closeModal(); });
   }
-  
   async function apiGET(url){ 
     const r = await fetch(url); 
     if(r.status === 401) {
@@ -249,7 +224,6 @@
       if(isDir) {
         iconHtml = `<span class='file-icon'>📁</span>`;
       } else if(isImage || isMedia === 'video') {
-        // 이미지와 비디오 파일은 실제 썸네일 표시
         const fallbackIcon = isImage ? '🖼️' : '🎬';
         iconHtml = `<img src='/thumbnail/${c.id}' class='thumbnail' onerror='this.style.display="none";this.nextElementSibling.style.display="inline-block"' /><span class='file-icon' style='display:none'>${fallbackIcon}</span>`;
       } else if(isMedia === 'audio') {
@@ -257,7 +231,6 @@
       } else {
         iconHtml = `<span class='file-icon'>📄</span>`;
       }
-      
       const nameHtml = isDir ? `<a href='javascript:void(0)' data-id='${c.id}' class='open'>${safe(c.name)}/</a>` : `<a href='javascript:void(0)' data-id='${c.id}' data-name='${c.name}' class='file-click'>${safe(c.name)}</a>`;
       const sizeHtml = isDir ? '-' : (c.size ? fmtSize(c.size) : '-');
       const dateHtml = c.updated_at ? new Date(c.updated_at).toLocaleString() : '-';
@@ -520,7 +493,6 @@
         try{
           const res = await apiPOST('/share/create', {node_id: id});
           status.innerText = t('createSuccess');
-          // Show the share link modal immediately
           shareModal(id, res.token);
         }catch(e){ alert(t('operationFailed') + ': ' + e.message); }
       });
@@ -530,7 +502,4 @@
   btnUp.addEventListener('click', ()=>{ if(currentNode && currentNode.oya_id) loadNode(currentNode.oya_id); else loadNode(); });
   btnAddFolder.addEventListener('click', addFolderModal);
   btnUpload.addEventListener('click', uploadModal);
-  if(isAuthenticated) {
-    await loadNode();
-  }
 })();
