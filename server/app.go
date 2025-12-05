@@ -128,7 +128,7 @@ func generateToken(userID uint, username string) (string, error) {
 		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(876000 * time.Hour)), // ~100 years
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
