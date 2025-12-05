@@ -38,7 +38,7 @@ Webとネイティブモバイルクライアントを備えた軽量で安全�
 #### ソースからビルド
 
 ```bash
-git clone https://github.com/yourusername/HaNas.git
+git clone https://github.com/zolotayautka/HaNas.git
 cd HaNas/server
 go build -o hanas
 ```
