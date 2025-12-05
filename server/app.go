@@ -34,8 +34,9 @@ const (
 	thumbDir    = "./thumbnails"
 	dbFile      = "./database.db"
 	programName = "HaNas"
-	jwtSecret   = "your-secret-key-change-this-in-production"
 )
+
+var jwtSecret string
 
 var db *gorm.DB
 
@@ -56,6 +57,12 @@ var (
 	uploadMutex    sync.Mutex
 	thumbnailMutex sync.Map
 )
+
+type Config struct {
+	ID    uint   `gorm:"primaryKey;autoIncrement" json:"id"`
+	Key   string `gorm:"uniqueIndex;not null" json:"key"`
+	Value string `gorm:"not null" json:"value"`
+}
 
 type User struct {
 	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
@@ -121,6 +128,29 @@ func hashPassword(password string) (string, error) {
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func initJWTSecret() error {
+	var config Config
+	if err := db.First(&config, "key = ?", "jwt_secret").Error; err != nil {
+		b := make([]byte, 32)
+		for i := range b {
+			b[i] = byte(mrand.Intn(256))
+		}
+		jwtSecret = base64.StdEncoding.EncodeToString(b)
+		config = Config{
+			Key:   "jwt_secret",
+			Value: jwtSecret,
+		}
+		if err := db.Create(&config).Error; err != nil {
+			return fmt.Errorf("failed to save jwt secret: %w", err)
+		}
+		fmt.Println("Generated new JWT secret")
+	} else {
+		jwtSecret = config.Value
+		fmt.Println("Loaded JWT secret from database")
+	}
+	return nil
 }
 
 func generateToken(userID uint, username string) (string, error) {
@@ -1283,7 +1313,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	db.AutoMigrate(&User{}, &Node{}, &Share{})
+	db.AutoMigrate(&Config{}, &User{}, &Node{}, &Share{})
+	if err := initJWTSecret(); err != nil {
+		panic(err)
+	}
 	http.HandleFunc("/register", Register)
 	http.HandleFunc("/login", Login)
 	http.HandleFunc("/logout", Logout)
