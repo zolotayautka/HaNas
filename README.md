@@ -38,7 +38,7 @@ A lightweight, secure file management system with web and native mobile clients.
 #### Build from source
 
 ```bash
-git clone https://github.com/yourusername/HaNas.git
+git clone https://github.com/zolotayautka/HaNas.git
 cd HaNas/server
 go build -o hanas
 ```
