@@ -38,7 +38,7 @@
 #### 소스에서 빌드
 
 ```bash
-git clone https://github.com/yourusername/HaNas.git
+git clone https://github.com/zolotayautka/HaNas.git
 cd HaNas/server
 go build -o hanas
 ```
