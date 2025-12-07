@@ -660,8 +660,8 @@ func extractVideoFrame(videoPath string) (image.Image, error) {
 	tmpFile := filepath.Join(os.TempDir(), fmt.Sprintf("thumb_%d.jpg", time.Now().UnixNano()))
 	defer os.Remove(tmpFile)
 	cmd := exec.Command(ffmpegPath,
-		"-ss", "00:00:00",
 		"-i", videoPath,
+		"-ss", "00:00:05",				
 		"-vframes", "1",
 		"-vf", "scale=200:200:force_original_aspect_ratio=decrease,pad=200:200:-1:-1:color=black",
 		"-q:v", "2",
