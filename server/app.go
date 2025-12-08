@@ -410,6 +410,9 @@ func DeleteNodeRecursive(id uint, userID uint) error {
 	if n.Fid != nil {
 		p := fmt.Sprintf("%s/%d", dataDir, *n.Fid)
 		_ = os.Remove(p)
+		// Delete thumbnail if exists
+		thumbPath := fmt.Sprintf("%s/%d.jpg", thumbDir, *n.Fid)
+		_ = os.Remove(thumbPath)
 	}
 	result := db.Delete(&n)
 	if result.Error != nil {
@@ -661,7 +664,7 @@ func extractVideoFrame(videoPath string) (image.Image, error) {
 	defer os.Remove(tmpFile)
 	cmd := exec.Command(ffmpegPath,
 		"-i", videoPath,
-		"-ss", "00:00:05",				
+		"-ss", "00:00:05",
 		"-vframes", "1",
 		"-vf", "scale=200:200:force_original_aspect_ratio=decrease,pad=200:200:-1:-1:color=black",
 		"-q:v", "2",

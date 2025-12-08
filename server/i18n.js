@@ -25,7 +25,8 @@ const i18n = {
     deleteConfirm: '削除の確認', deleteMsg: '本当に削除しますか？', deleted: '削除されました', deleteFailed: '削除失敗',
     share: '共有', shareLink: '共有リンク', createShareLink: '共有リンクを作成', copyLink: 'リンクをコピー',
     linkCopied: 'リンクがコピーされました', removeShare: '共有を解除', shareRemoved: '共有が解除されました',
-    createShareMsg: 'このファイルの共有リンクを作成しますか？\n誰でもこのリンクを使ってファイルにアクセスできるようになります。'
+    createShareMsg: 'このファイルの共有リンクを作成しますか？\n誰でもこのリンクを使ってファイルにアクセスできるようになります。',
+    nameExists: '同じ名前のファイルまたはフォルダがすでに存在します', overwriteConfirm: '同じ名前のファイルがあります。上書きしますか？'
   },
   ko: {
     login: '로그인', register: '회원가입', logout: '로그아웃',
@@ -53,7 +54,8 @@ const i18n = {
     deleteConfirm: '삭제 확인', deleteMsg: '정말로 삭제하시겠습니까?', deleted: '삭제 완료', deleteFailed: '삭제 실패',
     share: '공유', shareLink: '공유 링크', createShareLink: '공유 링크 만들기', copyLink: '링크 복사',
     linkCopied: '링크가 복사되었습니다', removeShare: '공유 해제', shareRemoved: '공유가 해제되었습니다',
-    createShareMsg: '이 파일의 공유 링크를 만드시겠습니까?\n링크를 가진 사람은 누구나 파일에 접근할 수 있습니다.'
+    createShareMsg: '이 파일의 공유 링크를 만드시겠습니까?\n링크를 가진 사람은 누구나 파일에 접근할 수 있습니다.',
+    nameExists: '같은 이름의 파일 또는 폴더가 이미 존재합니다', overwriteConfirm: '같은 이름의 파일이 있습니다. 덮어쓰시겠습니까?'
   },
   en: {
     login: 'Login', register: 'Register', logout: 'Logout',
@@ -81,6 +83,7 @@ const i18n = {
     deleteConfirm: 'Delete Confirmation', deleteMsg: 'Are you sure you want to delete?', deleted: 'Deleted', deleteFailed: 'Delete failed',
     share: 'Share', shareLink: 'Share Link', createShareLink: 'Create Share Link', copyLink: 'Copy Link',
     linkCopied: 'Link copied to clipboard', removeShare: 'Remove Share', shareRemoved: 'Share removed',
-    createShareMsg: 'Create a share link for this file?\nAnyone with the link will be able to access this file.'
+    createShareMsg: 'Create a share link for this file?\nAnyone with the link will be able to access this file.',
+    nameExists: 'A file or folder with the same name already exists', overwriteConfirm: 'A file with the same name already exists. Overwrite?'
   }
 };

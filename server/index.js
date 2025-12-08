@@ -312,6 +312,22 @@
       if(!fileEl.files || fileEl.files.length === 0){ alert(t('selectFile')); return; }
       const file = fileEl.files[0];
       const name = document.getElementById('uploadName').value.trim() || file.name;
+      
+      // Check for duplicate file name
+      if(currentNode && currentNode.ko) {
+        const conflict = currentNode.ko.find(c => c.name === name);
+        if(conflict) {
+          if(!confirm(t('overwriteConfirm'))) {
+            uploading = false;
+            startBtn.disabled = false;
+            fileInputEl.disabled = false;
+            cancelBtn.disabled = false;
+            startBtn.innerText = prevText;
+            return;
+          }
+        }
+      }
+      
       const uploadId = 'u' + Date.now() + Math.floor(Math.random()*9999);
       es = new EventSource('/upload/progress?upload_id=' + encodeURIComponent(uploadId));
       const bar = document.getElementById('uploadBar');
@@ -441,7 +457,17 @@
     document.getElementById('cancel').addEventListener('click', closeModal);
     document.getElementById('do').addEventListener('click', async ()=>{
       const nn = document.getElementById('newName').value.trim(); if(!nn){ alert(t('enterNewName')); return; }
-      try{ await apiPOST('/rename', {src_id: id, new_name: nn}); status.innerText = t('renamed'); closeModal(); loadNode(currentNode && currentNode.id ? currentNode.id : undefined);}catch(e){ alert(t('renameFailed') + ': ' + e.message); }
+      try{
+        const srcNode = await apiGET('/node/' + id);
+        if(currentNode && currentNode.ko) {
+          const conflict = currentNode.ko.find(c => c.name === nn && c.id !== id);
+          if(conflict) {
+            alert(t('nameExists'));
+            return;
+          }
+        }
+        await apiPOST('/rename', {src_id: id, new_name: nn}); status.innerText = t('renamed'); closeModal(); loadNode(currentNode && currentNode.id ? currentNode.id : undefined);
+      }catch(e){ alert(t('renameFailed') + ': ' + e.message); }
     });
   }
   function deleteModal(id){
