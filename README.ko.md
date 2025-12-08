@@ -317,9 +317,6 @@ const video = ['mp4','webm','ogg','mov','mkv','your-format'];
 - 인증 오류에 대한 서버 로그 확인
 - JWT 토큰이 쿠키에 설정되고 있는지 확인
 
-## 📄 라이선스
-
-MIT 라이선스
 
 ## 🤝 기여
 
