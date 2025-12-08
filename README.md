@@ -410,10 +410,6 @@ Permissions are requested only when needed.
 - [ ] User groups and permissions
 - [ ] Activity logs and analytics
 
-## 📄 License
-
-MIT License
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
