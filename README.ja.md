@@ -322,9 +322,6 @@ const video = ['mp4','webm','ogg','mov','mkv','your-format'];
 - 認証エラーのサーバーログを確認
 - JWTトークンがクッキーに設定されているか確認
 
-## 📄 ライセンス
-
-MIT License
 
 ## 🤝 コントリビューション
 
