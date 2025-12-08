@@ -1,3 +1,5 @@
+"loop_repeat" = "Loop";
+"loop_cancel" = "Cancel Loop";
 /* English */
 
 /* General */
@@ -92,3 +94,11 @@
 "error_server" = "Server Error: %@";
 "error_unauthorized" = "Authentication required.";
 "error_not_found" = "The requested resource was not found.";
+
+/* Duplicates and Overwrite */
+"name_exists" = "A file or folder with the same name already exists.";
+"name_exists_cannot_move" = "Cannot move: a file or folder with the same name already exists.";
+"overwrite_confirm_title" = "Confirm Overwrite";
+"overwrite_confirm_message" = "A file with the same name already exists. Do you want to overwrite it?";
+"file_exists_overwrite" = "The file '%@' already exists. Do you want to overwrite it?";
+"overwrite" = "Overwrite";

@@ -92,3 +92,11 @@
 "error_server" = "サーバーエラー: %@";
 "error_unauthorized" = "認証が必要です。";
 "error_not_found" = "要求されたリソースが見つかりません。";
+
+/* 重複と上書き */
+"name_exists" = "同じ名前のファイルまたはフォルダがすでに存在します。";
+"name_exists_cannot_move" = "同じ名前のファイルまたはフォルダが存在するため、移動できません。";
+"overwrite_confirm_title" = "上書き確認";
+"overwrite_confirm_message" = "同じ名前のファイルがすでに存在します。上書きしますか？";
+"file_exists_overwrite" = "'%@' ファイルがすでに存在します。上書きしますか？";
+"overwrite" = "上書き";

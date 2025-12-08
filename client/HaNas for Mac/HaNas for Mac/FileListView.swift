@@ -2,6 +2,7 @@ import SwiftUI
 import AVKit
 import PDFKit
 import Combine
+import AVFoundation
 
 struct FileListView: View {
     @StateObject private var viewModel = FileListViewModel()
@@ -91,6 +92,10 @@ struct FolderContentView: View {
     @State private var renameName = ""
     @State private var copiedNode: Node?
     @State private var cutNode: Node?
+    @State private var showingDuplicateAlert = false
+    @State private var duplicateAlertMessage = ""
+    @State private var showingOverwriteAlert = false
+    @State private var overwriteAction: (() -> Void)?
     
     var body: some View {
         VStack(spacing: 0) {
@@ -216,6 +221,19 @@ struct FolderContentView: View {
         } message: {
             Text(NSLocalizedString("rename_message", comment: ""))
         }
+        .alert(NSLocalizedString("error", comment: ""), isPresented: $showingDuplicateAlert) {
+            Button(NSLocalizedString("ok", comment: ""), role: .cancel) { }
+        } message: {
+            Text(duplicateAlertMessage)
+        }
+        .alert(NSLocalizedString("overwrite_confirm_title", comment: ""), isPresented: $showingOverwriteAlert) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) { }
+            Button(NSLocalizedString("overwrite", comment: ""), role: .destructive) {
+                overwriteAction?()
+            }
+        } message: {
+            Text(NSLocalizedString("overwrite_confirm_message", comment: ""))
+        }
     }
 
     private var supportsCopyAPI: Bool {
@@ -302,8 +320,34 @@ struct FolderContentView: View {
         panel.begin { response in
             guard response == .OK else { return }
             Task {
-                var uploadCount = 0
+                // Check for duplicate names first
+                let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
+                let existingNames = currentFolder?.ko?.map { $0.name } ?? []
+                
+                var filesToUpload: [(URL, Bool)] = []
                 for url in panel.urls {
+                    let filename = url.lastPathComponent
+                    let isDuplicate = existingNames.contains(filename)
+                    filesToUpload.append((url, isDuplicate))
+                }
+                
+                var uploadCount = 0
+                for (url, isDuplicate) in filesToUpload {
+                    if isDuplicate {
+                        let shouldOverwrite = await MainActor.run {
+                            let alert = NSAlert()
+                            alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
+                            alert.informativeText = String(format: NSLocalizedString("file_exists_overwrite", comment: ""), url.lastPathComponent)
+                            alert.addButton(withTitle: NSLocalizedString("overwrite", comment: ""))
+                            alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+                            alert.alertStyle = .warning
+                            return alert.runModal() == .alertFirstButtonReturn
+                        }
+                        if !shouldOverwrite {
+                            continue
+                        }
+                    }
+                    
                     do {
                         guard let data = try? Data(contentsOf: url) else {
                             continue
@@ -325,7 +369,32 @@ struct FolderContentView: View {
     
     private func pasteItem() {
         guard let parentId = selectedFolderID else { return }
+        
         if let node = copiedNode {
+            // Check for duplicate before copying
+            if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
+               let children = currentFolder.ko {
+                let duplicate = children.first { $0.name == node.name }
+                if duplicate != nil {
+                    // Ask user to confirm overwrite
+                    overwriteAction = {
+                        Task {
+                            do {
+                                try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: parentId, overwrite: true)
+                                await MainActor.run {
+                                    viewModel.loadFolder(id: parentId, forceRefresh: true)
+                                    viewModel.refreshTree()
+                                    copiedNode = nil
+                                }
+                            } catch {
+                            }
+                        }
+                    }
+                    showingOverwriteAlert = true
+                    return
+                }
+            }
+            
             Task {
                 do {
                     try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: parentId, overwrite: false)
@@ -338,9 +407,36 @@ struct FolderContentView: View {
                 }
             }
         } else if let node = cutNode {
+            // Check for duplicate before moving
+            if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
+               let children = currentFolder.ko {
+                let duplicate = children.first { $0.name == node.name && $0.id != node.id }
+                if duplicate != nil {
+                    // Ask user to confirm overwrite
+                    overwriteAction = {
+                        Task {
+                            do {
+                                try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId, overwrite: true)
+                                await MainActor.run {
+                                    if let oldParentId = node.oyaId {
+                                        viewModel.loadFolder(id: oldParentId, forceRefresh: true)
+                                    }
+                                    viewModel.loadFolder(id: parentId, forceRefresh: true)
+                                    viewModel.refreshTree()
+                                    cutNode = nil
+                                }
+                            } catch {
+                            }
+                        }
+                    }
+                    showingOverwriteAlert = true
+                    return
+                }
+            }
+            
             Task {
                 do {
-                    try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId)
+                    try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId, overwrite: false)
                     await MainActor.run {
                         if let oldParentId = node.oyaId {
                             viewModel.loadFolder(id: oldParentId, forceRefresh: true)
@@ -357,6 +453,17 @@ struct FolderContentView: View {
     
     private func renameItem() {
         guard let node = renameNode else { return }
+        
+        // Check for duplicate names in the current folder
+        if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
+           let children = currentFolder.ko {
+            let duplicate = children.first { $0.name == renameName && $0.id != node.id }
+            if duplicate != nil {
+                duplicateAlertMessage = NSLocalizedString("name_exists", comment: "")
+                showingDuplicateAlert = true
+                return
+            }
+        }
         
         Task {
             do {
@@ -605,6 +712,9 @@ struct MediaPreviewView: View {
     @State private var mediaData: Data?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var videoURL: URL?
+    @State private var audioURL: URL?
+    @State private var isAudioLooping: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -665,8 +775,11 @@ struct MediaPreviewView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         } else if ["mp4", "mov", "m4v"].contains(ext) {
-            if let url = saveTemporaryFile(data: data, filename: node.name) {
-                AVPlayerViewWrapper(url: url)
+            if let streamURL = videoURL {
+                AVPlayerViewWrapper(url: streamURL)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         } else if ["mp3", "wav", "m4a", "aac"].contains(ext) {
@@ -683,8 +796,17 @@ struct MediaPreviewView: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                if let url = saveTemporaryFile(data: data, filename: node.name) {
-                    VideoPlayer(player: AVPlayer(url: url))
+                if let streamURL = audioURL {
+                    AudioLoopPlayerView(url: streamURL, isLooping: $isAudioLooping)
+                        .frame(height: 120)
+                        .padding()
+                    Button(action: { isAudioLooping.toggle() }) {
+                        Label(NSLocalizedString(isAudioLooping ? "loop_cancel" : "loop_repeat", comment: ""), systemImage: isAudioLooping ? "repeat.circle.fill" : "repeat.circle")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding()
+                } else {
+                    ProgressView()
                         .frame(height: 120)
                         .padding()
                 }
@@ -703,10 +825,27 @@ struct MediaPreviewView: View {
         
         Task {
             do {
-                let data = try await HaNasAPI.shared.downloadFile(id: node.id)
-                await MainActor.run {
-                    mediaData = data
-                    isLoading = false
+                let ext = (node.name as NSString).pathExtension.lowercased()
+                if ["mp4", "mov", "m4v"].contains(ext) {
+                    let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "video")
+                    await MainActor.run {
+                        videoURL = url
+                        mediaData = Data() // placeholder to trigger mediaContent path
+                        isLoading = false
+                    }
+                } else if ["mp3", "wav", "m4a", "aac"].contains(ext) {
+                    let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "audio")
+                    await MainActor.run {
+                        audioURL = url
+                        mediaData = Data() // placeholder
+                        isLoading = false
+                    }
+                } else {
+                    let data = try await HaNasAPI.shared.downloadFile(id: node.id)
+                    await MainActor.run {
+                        mediaData = data
+                        isLoading = false
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -720,14 +859,17 @@ struct MediaPreviewView: View {
     }
     
     private func exportFile() {
-        guard let data = mediaData else { return }
-        Task { @MainActor in
-            await showSavePanel(with: data)
+        Task {
+            do {
+                let data = try await HaNasAPI.shared.downloadFile(id: node.id)
+                showSavePanel(with: data)
+            } catch {
+            }
         }
     }
     
     @MainActor
-    private func showSavePanel(with data: Data) async {
+    private func showSavePanel(with data: Data) {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = node.name
         panel.canCreateDirectories = true
@@ -919,4 +1061,56 @@ struct PDFViewWrapper: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: PDFView, context: Context) {}
+}
+
+struct AudioLoopPlayerView: View {
+    let url: URL
+    @Binding var isLooping: Bool
+    @State private var player: AVPlayer? = nil
+    @State private var observer: Any?
+
+    var body: some View {
+        VStack {
+            if let player = player {
+                VideoPlayer(player: player)
+                    .onAppear {
+                        player.play()
+                        addLoopObserver()
+                    }
+                    .onDisappear {
+                        player.pause()
+                        removeLoopObserver()
+                    }
+            } else {
+                ProgressView()
+            }
+        }
+        .onAppear {
+            if player == nil {
+                player = AVPlayer(url: url)
+            }
+        }
+    }
+
+    private func addLoopObserver() {
+        removeLoopObserver()
+        guard let player = player else { return }
+        observer = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem,
+            queue: .main
+        ) { _ in
+            if isLooping {
+                player.seek(to: .zero)
+                player.play()
+            }
+        }
+    }
+
+    private func removeLoopObserver() {
+        if let observer = observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        observer = nil
+    }
 }

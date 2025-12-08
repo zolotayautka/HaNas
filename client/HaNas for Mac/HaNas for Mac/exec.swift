@@ -435,6 +435,19 @@ class HaNasAPI {
         }
         return progress
     }
+    
+    // NEW: Build a streaming URL for AVPlayer/VideoPlayer
+    // Currently uses /file/{id}?inline=1 so the server can stream the content.
+    // The 'type' parameter is kept for compatibility (video/audio), in case you later switch to a dedicated stream endpoint.
+    func getStreamURL(id: Int, type: String) async throws -> URL {
+        var endpoint = "/file/\(id)?inline=1"
+        // If you later introduce a dedicated stream endpoint, adjust here, e.g.:
+        // endpoint = "/stream/\(id)?type=\(type)"
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw HaNasError.invalidURL
+        }
+        return url
+    }
 
     private func performRequestWithoutResponse(
         endpoint: String,
