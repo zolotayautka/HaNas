@@ -1,0 +1,104 @@
+"loop_repeat" = "Loop";
+"loop_cancel" = "Cancel Loop";
+/* English */
+
+/* General */
+"app_name" = "HaNas";
+"loading" = "Loading...";
+"ok" = "OK";
+"cancel" = "Cancel";
+"close" = "Close";
+"back" = "Back";
+"retry" = "Retry";
+"refresh" = "Refresh";
+"error" = "Error";
+
+/* Login */
+"login_title" = "Login";
+"register_title" = "Register";
+"server_address" = "Server Address";
+"username" = "Username";
+"password" = "Password";
+"login_button" = "Login";
+"register_button" = "Register";
+"logout_button" = "Logout";
+"username_placeholder" = "Enter username";
+"password_placeholder" = "Enter password";
+"login_failed" = "Login failed";
+"register_failed" = "Registration failed";
+
+/* File Management */
+"folder" = "Folder";
+"file" = "File";
+"new_folder" = "New Folder";
+"upload_file" = "Upload File";
+"paste" = "Paste";
+"empty_folder" = "This folder is empty";
+
+/* Context Menu */
+"preview" = "Preview";
+"copy" = "Copy";
+"cut" = "Cut";
+"rename" = "Rename";
+"export" = "Export";
+"delete" = "Delete";
+"share_create" = "Create Share Link";
+"share_copy" = "Copy Share Link";
+"share_remove" = "Remove Share";
+
+/* Dialogs */
+"new_folder_title" = "New Folder";
+"new_folder_message" = "Enter a new folder name";
+"new_folder_placeholder" = "Folder name";
+"create" = "Create";
+
+"rename_title" = "Rename";
+"rename_message" = "Enter a new name";
+"rename_placeholder" = "New name";
+"change" = "Change";
+
+/* Success Messages */
+"folder_created" = "Folder created successfully";
+"file_uploaded" = "File uploaded successfully";
+"copied" = "Copied successfully";
+"moved" = "Moved successfully";
+"renamed" = "Renamed successfully";
+"deleted" = "Deleted successfully";
+"share_created" = "Share link created and copied";
+"share_copied" = "Share link copied";
+"share_removed" = "Share removed";
+"file_saved" = "File saved successfully";
+
+/* Error Messages */
+"folder_create_failed" = "Failed to create folder";
+"file_upload_failed" = "Failed to upload file";
+"copy_failed" = "Failed to copy";
+"move_failed" = "Failed to move";
+"rename_failed" = "Failed to rename";
+"delete_failed" = "Failed to delete";
+"share_create_failed" = "Failed to create share link";
+"share_remove_failed" = "Failed to remove share";
+"file_save_failed" = "Failed to save file";
+"cannot_load_file" = "Cannot load file";
+"cannot_load_data" = "Cannot load data";
+"cannot_load_data_with_error" = "Cannot load data: %@";
+"config_save_failed" = "Failed to save configuration";
+"login_error" = "Login failed";
+"register_error" = "Registration failed";
+"unknown_error" = "An unknown error occurred";
+"connection_error" = "Cannot connect to server. Please check the server address";
+"folder_load_failed" = "Failed to load folder";
+"error_invalid_url" = "Invalid URL.";
+"error_invalid_response" = "Unable to process server response.";
+"error_http" = "HTTP Error: %d";
+"error_server" = "Server Error: %@";
+"error_unauthorized" = "Authentication required.";
+"error_not_found" = "The requested resource was not found.";
+
+/* Duplicates and Overwrite */
+"name_exists" = "A file or folder with the same name already exists.";
+"name_exists_cannot_move" = "Cannot move: a file or folder with the same name already exists.";
+"overwrite_confirm_title" = "Confirm Overwrite";
+"overwrite_confirm_message" = "A file with the same name already exists. Do you want to overwrite it?";
+"file_exists_overwrite" = "The file '%@' already exists. Do you want to overwrite it?";
+"overwrite" = "Overwrite";
