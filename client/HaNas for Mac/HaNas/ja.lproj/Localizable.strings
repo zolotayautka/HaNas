@@ -1,0 +1,104 @@
+"error_unauthorized_friendly" = "ユーザー名またはパスワードが正しくありません。ご確認ください。";
+/* 日本語 */
+
+/* 一般 */
+"app_name" = "HaNas";
+"loading" = "読み込み中...";
+"ok" = "OK";
+"cancel" = "キャンセル";
+"close" = "閉じる";
+"back" = "戻る";
+"retry" = "再試行";
+"refresh" = "更新";
+"error" = "エラー";
+
+/* ログイン */
+"login_title" = "ログイン";
+"register_title" = "会員登録";
+"server_address" = "サーバーアドレス";
+"username" = "ユーザー名";
+"password" = "パスワード";
+"login_button" = "ログイン";
+"register_button" = "登録";
+"logout_button" = "ログアウト";
+"username_placeholder" = "ユーザー名を入力";
+"password_placeholder" = "パスワードを入力";
+"login_failed" = "ログイン失敗";
+"register_failed" = "登録失敗";
+
+/* ファイル管理 */
+"folder" = "フォルダ";
+"file" = "ファイル";
+"new_folder" = "新規フォルダ";
+"upload_file" = "ファイルアップロード";
+"paste" = "貼り付け";
+"empty_folder" = "フォルダは空です";
+
+/* コンテキストメニュー */
+"preview" = "プレビュー";
+"copy" = "コピー";
+"cut" = "切り取り";
+"rename" = "名前変更";
+"export" = "エクスポート";
+"delete" = "削除";
+"share_create" = "共有リンク作成";
+"share_copy" = "共有リンクコピー";
+"share_remove" = "共有解除";
+
+/* ダイアログ */
+"new_folder_title" = "新しいフォルダ";
+"new_folder_message" = "新しいフォルダ名を入力してください";
+"new_folder_placeholder" = "フォルダ名";
+"create" = "作成";
+
+"rename_title" = "名前変更";
+"rename_message" = "新しい名前を入力してください";
+"rename_placeholder" = "新しい名前";
+"change" = "変更";
+
+/* 成功メッセージ */
+"folder_created" = "フォルダ作成成功";
+"file_uploaded" = "ファイルアップロード成功";
+"copied" = "コピー成功";
+"moved" = "移動成功";
+"renamed" = "名前変更成功";
+"deleted" = "削除成功";
+"share_created" = "共有リンク作成・コピー完了";
+"share_copied" = "共有リンクコピー完了";
+"share_removed" = "共有解除完了";
+"file_saved" = "ファイル保存成功";
+
+/* エラーメッセージ */
+"folder_create_failed" = "フォルダ作成失敗";
+"file_upload_failed" = "ファイルアップロード失敗";
+"copy_failed" = "コピー失敗";
+"move_failed" = "移動失敗";
+"rename_failed" = "名前変更失敗";
+"delete_failed" = "削除失敗";
+"share_create_failed" = "共有リンク作成失敗";
+"share_remove_failed" = "共有解除失敗";
+"file_save_failed" = "ファイル保存失敗";
+"cannot_load_file" = "ファイルを読み込めません";
+"cannot_load_data" = "データを読み込めません";
+"cannot_load_data_with_error" = "データを読み込めません: %@";
+"config_save_failed" = "設定の保存に失敗しました";
+"login_error" = "ログインに失敗しました";
+"register_error" = "登録に失敗しました";
+"unknown_error" = "不明なエラーが発生しました";
+"connection_error" = "サーバーに接続できません。サーバーアドレスを確認してください";
+"folder_load_failed" = "フォルダの読み込み失敗";
+"error_invalid_url" = "無効なURLです。";
+"error_invalid_response" = "サーバーの応答を処理できません。";
+"error_http" = "HTTPエラー: %d";
+"error_server" = "サーバーエラー: %@";
+"error_unauthorized" = "認証が必要です。";
+"error_not_found" = "要求されたリソースが見つかりません。";
+"error_id_exists" = "このユーザー名は既に存在します。";
+
+/* 重複と上書き */
+"name_exists" = "同じ名前のファイルまたはフォルダがすでに存在します。";
+"name_exists_cannot_move" = "同じ名前のファイルまたはフォルダが存在するため、移動できません。";
+"overwrite_confirm_title" = "上書き確認";
+"overwrite_confirm_message" = "同じ名前のファイルがすでに存在します。上書きしますか？";
+"file_exists_overwrite" = "'%@' ファイルがすでに存在します。上書きしますか？";
+"overwrite" = "上書き";
