@@ -1,0 +1,71 @@
+/* App Name */
+"app_name" = "HaNas";
+
+/* Login View */
+"login_title" = "Login";
+"register_title" = "Create Account";
+"server_address" = "Server Address";
+"server_placeholder" = "http://192.168.1.1";
+"username" = "Username";
+"username_placeholder" = "Username";
+"password" = "Password";
+"password_placeholder" = "Password";
+"login_button" = "Login";
+"register_button" = "Register";
+"switch_to_register" = "Don't have an account? Register";
+"switch_to_login" = "Already have an account? Login";
+"login_failed" = "Login failed";
+"register_failed" = "Registration failed";
+"connection_error" = "Connection error";
+"config_save_failed" = "Failed to save configuration";
+"login_invalid_credentials" = "Invalid username or password.";
+"register_duplicate_id" = "This username is already taken.";
+
+/* File List */
+"loading" = "Loading...";
+"empty_folder" = "Empty Folder";
+"upload_photo" = "Upload Photo";
+"upload_file" = "Upload File";
+"new_folder" = "New Folder";
+"paste" = "Paste";
+"refresh" = "Refresh";
+"logout" = "Logout";
+
+/* File Actions */
+"preview" = "Preview";
+"export" = "Export";
+"copy" = "Copy";
+"cut" = "Cut";
+"rename" = "Rename";
+"delete" = "Delete";
+"copy_share_link" = "Copy Share Link";
+"remove_share" = "Remove Share";
+"create_share_link" = "Create Share Link";
+
+/* Alerts */
+"new_folder_title" = "New Folder";
+"folder_name" = "Folder Name";
+"folder_name_placeholder" = "Folder Name";
+"new_folder_message" = "Enter a name for the new folder";
+"rename_title" = "Rename";
+"new_name" = "New Name";
+"new_name_placeholder" = "New Name";
+"rename_message" = "Enter a new name";
+"cancel" = "Cancel";
+"create" = "Create";
+"ok" = "OK";
+
+/* Share */
+"share" = "Share";
+"share_link_copied" = "Share link copied to clipboard";
+
+/* Media Preview */
+"close" = "Close";
+
+/* Duplicates and Overwrite */
+"error" = "Error";
+"name_exists" = "A file or folder with the same name already exists.";
+"name_exists_cannot_move" = "Cannot move: a file or folder with the same name already exists.";
+"overwrite_confirm_title" = "Confirm Overwrite";
+"overwrite_confirm_message" = "A file with the same name already exists. Do you want to overwrite it?";
+"overwrite" = "Overwrite";
