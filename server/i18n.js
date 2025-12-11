@@ -27,6 +27,12 @@ const i18n = {
     linkCopied: 'リンクがコピーされました', removeShare: '共有を解除', shareRemoved: '共有が解除されました',
     createShareMsg: 'このファイルの共有リンクを作成しますか？\n誰でもこのリンクを使ってファイルにアクセスできるようになります。',
     nameExists: '同じ名前のファイルまたはフォルダがすでに存在します', overwriteConfirm: '同じ名前のファイルがあります。上書きしますか？'
+    , deleteAccountConfirm: '本当にアカウントを削除しますか？'
+    , enterPassword: '確認のためパスワードを入力してください。'
+    , accountDeleted: 'アカウントが削除されました。'
+    , deleteAccountFailed: 'アカウント削除に失敗しました: '
+    , fillPassword: 'パスワードを入力してください。'
+    , password: 'パスワード'
   },
   ko: {
     login: '로그인', register: '회원가입', logout: '로그아웃',
@@ -56,6 +62,12 @@ const i18n = {
     linkCopied: '링크가 복사되었습니다', removeShare: '공유 해제', shareRemoved: '공유가 해제되었습니다',
     createShareMsg: '이 파일의 공유 링크를 만드시겠습니까?\n링크를 가진 사람은 누구나 파일에 접근할 수 있습니다.',
     nameExists: '같은 이름의 파일 또는 폴더가 이미 존재합니다', overwriteConfirm: '같은 이름의 파일이 있습니다. 덮어쓰시겠습니까?'
+    , deleteAccountConfirm: '정말로 계정을 삭제하시겠습니까?'
+    , enterPassword: '확인을 위해 비밀번호를 입력하세요.'
+    , accountDeleted: '계정이 삭제되었습니다.'
+    , deleteAccountFailed: '계정 삭제 실패: '
+    , fillPassword: '비밀번호를 입력하세요.'
+    , password: '비밀번호'
   },
   en: {
     login: 'Login', register: 'Register', logout: 'Logout',
@@ -85,5 +97,11 @@ const i18n = {
     linkCopied: 'Link copied to clipboard', removeShare: 'Remove Share', shareRemoved: 'Share removed',
     createShareMsg: 'Create a share link for this file?\nAnyone with the link will be able to access this file.',
     nameExists: 'A file or folder with the same name already exists', overwriteConfirm: 'A file with the same name already exists. Overwrite?'
+    , deleteAccountConfirm: 'Are you sure you want to delete your account?'
+    , enterPassword: 'Please enter your password to confirm.'
+    , accountDeleted: 'Account deleted.'
+    , deleteAccountFailed: 'Failed to delete account: '
+    , fillPassword: 'Please enter your password.'
+    , password: 'Password'
   }
 };

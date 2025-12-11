@@ -1310,6 +1310,39 @@ func DeleteShare(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"success":true}`))
 }
 
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Password == "" {
+		http.Error(w, "Password required", http.StatusBadRequest)
+		return
+	}
+	var user User
+	if err := db.First(&user, userID).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	if !checkPasswordHash(req.Password, user.Password) {
+		http.Error(w, "Incorrect password", http.StatusUnauthorized)
+		return
+	}
+	db.Where("user_id = ?", userID).Delete(&Node{})
+	db.Where("user_id = ?", userID).Delete(&Share{})
+	result := db.Delete(&User{}, userID)
+	if result.Error != nil {
+		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Account deleted"))
+}
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
@@ -1336,6 +1369,7 @@ func main() {
 	http.HandleFunc("/share/create", authMiddleware(CreateShare))
 	http.HandleFunc("/share/delete", authMiddleware(DeleteShare))
 	http.HandleFunc("/s/", GetSharedFile)
+	http.HandleFunc("/delete-account", authMiddleware(DeleteAccount))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(indexHtmlContent))

@@ -102,6 +102,33 @@
     showAuthView();
     updateAuthUI();
   });
+    const btnDeleteAccount = document.getElementById('btnDeleteAccount');
+    btnDeleteAccount.addEventListener('click', async () => {
+      openModal(`<h3>${t('deleteAccountConfirm')}</h3>
+        <div style='margin-bottom:8px'>${t('enterPassword')}</div>
+        <input type='password' id='deleteAccountPassword' placeholder='${t('password')}' style='width:100%;margin-bottom:12px' />
+        <div class='foot'><button id='cancelDeleteAccount'>${t('cancel')}</button><button id='confirmDeleteAccount' style='color:#900'>${t('delete')}</button></div>`);
+      document.getElementById('cancelDeleteAccount').addEventListener('click', closeModal);
+      document.getElementById('confirmDeleteAccount').addEventListener('click', async () => {
+        const password = document.getElementById('deleteAccountPassword').value;
+        if(!password) { alert(t('fillPassword') || 'Please enter your password.'); return; }
+        try {
+          const res = await fetch('/delete-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+          });
+          if(!res.ok) throw new Error(await res.text());
+          alert(t('accountDeleted') || 'Account deleted.');
+          currentUser = null;
+          closeModal();
+          showAuthView();
+          updateAuthUI();
+        } catch(e) {
+          alert((t('deleteAccountFailed') || 'Failed to delete account: ') + e.message);
+        }
+      });
+    });
   function showAuthView() {
     authView.classList.remove('hidden');
     mainView.classList.add('hidden');
