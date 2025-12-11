@@ -24,7 +24,7 @@ struct FileListView: View {
     @State private var duplicateAlertMessage = ""
     @State private var showingOverwriteAlert = false
     @State private var overwriteAction: (() -> Void)?
-    @State private var showingDeleteAccountAlert = false
+    @State private var showingDeleteAccountDialog = false
     @State private var deleteAccountPassword = ""
     @State private var deleteAccountError: String = ""
     @EnvironmentObject var appState: AppState
@@ -126,7 +126,7 @@ struct FileListView: View {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                 }
                 Button(action: {
-                    showingDeleteAccountAlert = true
+                    showingDeleteAccountDialog = true
                 }) {
                     Image(systemName: "person.crop.circle.badge.xmark")
                 }
@@ -183,33 +183,53 @@ struct FileListView: View {
         } message: {
             Text(NSLocalizedString("overwrite_confirm_message", comment: ""))
         }
-        .sheet(isPresented: $showingDeleteAccountAlert) {
-            VStack(spacing: 20) {
-                Text(NSLocalizedString("deleteAccountConfirm", comment: "Are you sure you want to delete your account?"))
-                SecureField(NSLocalizedString("password", comment: "Password"), text: $deleteAccountPassword)
-                    .textContentType(.password)
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(8)
-                if !deleteAccountError.isEmpty {
-                    Text(deleteAccountError)
-                        .foregroundColor(.red)
-                        .font(.footnote)
-                }
-                HStack {
-                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
-                        showingDeleteAccountAlert = false
-                        deleteAccountPassword = ""
-                        deleteAccountError = ""
+        .overlay(
+            Group {
+                if showingDeleteAccountDialog {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        Text(NSLocalizedString("deleteAccountConfirm", comment: "Are you sure you want to delete your account?"))
+                            .font(.headline)
+                        SecureField(NSLocalizedString("password", comment: "Password"), text: $deleteAccountPassword)
+                            .textContentType(.password)
+                            .padding(8)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(6)
+                            .frame(width: 220)
+                        if !deleteAccountError.isEmpty {
+                            Text(deleteAccountError)
+                                .foregroundColor(.red)
+                                .font(.footnote)
+                        }
+                        HStack {
+                            Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                                showingDeleteAccountDialog = false
+                                deleteAccountPassword = ""
+                                deleteAccountError = ""
+                            }
+                            Spacer()
+                            Button(NSLocalizedString("delete", comment: "Delete")) {
+                                deleteAccount()
+                            }
+                            .foregroundColor(.red)
+                        }
                     }
-                    Spacer()
-                    Button(NSLocalizedString("delete", comment: "Delete")) {
-                        deleteAccount()
-                    }
-                    .foregroundColor(.red)
+                    .padding(20)
+                    .background(Color(UIColor.systemBackground))
+                    .cornerRadius(14)
+                    .frame(width: 280)
+                    .shadow(radius: 20)
                 }
             }
-            .padding()
+        )
+        .onChange(of: showingDeleteAccountDialog) { newValue in
+            if newValue {
+                deleteAccountError = ""
+            } else {
+                deleteAccountPassword = ""
+                deleteAccountError = ""
+            }
         }
         .background(
             Group {
@@ -553,7 +573,7 @@ struct FileListView: View {
             DispatchQueue.main.async {
                 if let httpResponse = response as? HTTPURLResponse {
                     if httpResponse.statusCode == 200 {
-                        showingDeleteAccountAlert = false
+                        showingDeleteAccountDialog = false
                         deleteAccountPassword = ""
                         deleteAccountError = ""
                         appState.logout()
