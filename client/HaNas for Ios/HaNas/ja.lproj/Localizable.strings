@@ -20,6 +20,7 @@
 "config_save_failed" = "設定の保存に失敗しました";
 "login_invalid_credentials" = "ユーザー名またはパスワードが正しくありません。";
 "register_duplicate_id" = "このユーザー名は既に使用されています。";
+"incorrectPassword" = "パスワードが正しくありません。";
 
 /* File List */
 "loading" = "読み込み中...";
@@ -69,3 +70,11 @@
 "overwrite_confirm_title" = "上書き確認";
 "overwrite_confirm_message" = "同じ名前のファイルがすでに存在します。上書きしますか？";
 "overwrite" = "上書き";
+
+/* アカウント削除 */
+"deleteAccountConfirm" = "本当にアカウントを削除しますか？";
+"accountDeleted" = "アカウントが削除されました。";
+"deleteAccountFailed" = "アカウント削除に失敗しました。";
+"password" = "パスワード";
+"cancel" = "キャンセル";
+"delete" = "削除";

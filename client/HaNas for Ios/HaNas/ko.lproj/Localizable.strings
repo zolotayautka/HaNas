@@ -20,6 +20,7 @@
 "config_save_failed" = "설정 저장 실패";
 "login_invalid_credentials" = "아이디 또는 비밀번호가 올바르지 않습니다.";
 "register_duplicate_id" = "이미 사용 중인 아이디입니다.";
+"incorrectPassword" = "비밀번호가 올바르지 않습니다.";
 
 /* File List */
 "loading" = "로딩 중...";
@@ -69,3 +70,8 @@
 "overwrite_confirm_title" = "덮어쓰기 확인";
 "overwrite_confirm_message" = "같은 이름의 파일이 이미 존재합니다. 덮어쓰시겠습니까?";
 "overwrite" = "덮어쓰기";
+
+/* 회원탈퇴 관련 */
+"deleteAccountConfirm" = "정말로 계정을 삭제하시겠습니까?";
+"accountDeleted" = "계정이 삭제되었습니다.";
+"deleteAccountFailed" = "계정 삭제에 실패했습니다.";

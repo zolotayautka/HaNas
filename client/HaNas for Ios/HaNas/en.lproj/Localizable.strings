@@ -20,6 +20,7 @@
 "config_save_failed" = "Failed to save configuration";
 "login_invalid_credentials" = "Invalid username or password.";
 "register_duplicate_id" = "This username is already taken.";
+"incorrectPassword" = "Incorrect password.";
 
 /* File List */
 "loading" = "Loading...";
@@ -69,3 +70,11 @@
 "overwrite_confirm_title" = "Confirm Overwrite";
 "overwrite_confirm_message" = "A file with the same name already exists. Do you want to overwrite it?";
 "overwrite" = "Overwrite";
+
+/* Account Deletion */
+"deleteAccountConfirm" = "Are you sure you want to delete your account?";
+"accountDeleted" = "Account deleted.";
+"deleteAccountFailed" = "Failed to delete account.";
+"password" = "Password";
+"cancel" = "Cancel";
+"delete" = "Delete";

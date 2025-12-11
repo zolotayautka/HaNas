@@ -24,6 +24,9 @@ struct FileListView: View {
     @State private var duplicateAlertMessage = ""
     @State private var showingOverwriteAlert = false
     @State private var overwriteAction: (() -> Void)?
+    @State private var showingDeleteAccountAlert = false
+    @State private var deleteAccountPassword = ""
+    @State private var deleteAccountError: String = ""
     @EnvironmentObject var appState: AppState
     
     var body: some View {
@@ -116,11 +119,16 @@ struct FileListView: View {
                     Image(systemName: "plus.circle")
                 }
             }
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItemGroup(placement: .navigationBarLeading) {
                 Button(action: {
                     appState.logout()
                 }) {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
+                }
+                Button(action: {
+                    showingDeleteAccountAlert = true
+                }) {
+                    Image(systemName: "person.crop.circle.badge.xmark")
                 }
             }
         }
@@ -174,6 +182,34 @@ struct FileListView: View {
             }
         } message: {
             Text(NSLocalizedString("overwrite_confirm_message", comment: ""))
+        }
+        .sheet(isPresented: $showingDeleteAccountAlert) {
+            VStack(spacing: 20) {
+                Text(NSLocalizedString("deleteAccountConfirm", comment: "Are you sure you want to delete your account?"))
+                SecureField(NSLocalizedString("password", comment: "Password"), text: $deleteAccountPassword)
+                    .textContentType(.password)
+                    .padding()
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(8)
+                if !deleteAccountError.isEmpty {
+                    Text(deleteAccountError)
+                        .foregroundColor(.red)
+                        .font(.footnote)
+                }
+                HStack {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        showingDeleteAccountAlert = false
+                        deleteAccountPassword = ""
+                        deleteAccountError = ""
+                    }
+                    Spacer()
+                    Button(NSLocalizedString("delete", comment: "Delete")) {
+                        deleteAccount()
+                    }
+                    .foregroundColor(.red)
+                }
+            }
+            .padding()
         }
         .background(
             Group {
@@ -502,6 +538,39 @@ struct FileListView: View {
                 }
             } catch {}
         }
+    }
+    
+    private func deleteAccount() {
+        guard let serverURL = appState.serverURL, !deleteAccountPassword.isEmpty else { return }
+        let urlString = serverURL + (serverURL.hasSuffix("/") ? "delete-account" : "/delete-account")
+        guard let url = URL(string: urlString) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body = ["password": deleteAccountPassword]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 200 {
+                        showingDeleteAccountAlert = false
+                        deleteAccountPassword = ""
+                        deleteAccountError = ""
+                        appState.logout()
+                    } else if httpResponse.statusCode == 401 {
+                        deleteAccountError = NSLocalizedString("incorrectPassword", comment: "Incorrect password.")
+                    } else {
+                        deleteAccountError = NSLocalizedString("deleteAccountFailed", comment: "Failed to delete account.")
+                    }
+                }
+            }
+        }.resume()
+    }
+
+    private func showIncorrectPasswordAlert() {
+        let alert = UIAlertController(title: nil, message: NSLocalizedString("incorrectPassword", comment: "Incorrect password."), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("ok", comment: "OK"), style: .default))
+        UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true)
     }
 }
 
@@ -1309,7 +1378,7 @@ final class AudioPlaybackManager {
             stopCurrent()
         }
         self.player = player
-        self.title = title
+               self.title = title
         self.duration = duration
         self.onToggle = onToggle
         self.onSeek = onSeek
