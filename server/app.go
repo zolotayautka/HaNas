@@ -1332,6 +1332,16 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect password", http.StatusUnauthorized)
 		return
 	}
+	var nodes []Node
+	db.Where("user_id = ?", userID).Find(&nodes)
+	for _, n := range nodes {
+		if n.Fid != nil {
+			p := fmt.Sprintf("%s/%d", dataDir, *n.Fid)
+			_ = os.Remove(p)
+			thumbPath := fmt.Sprintf("%s/%d.jpg", thumbDir, *n.Fid)
+			_ = os.Remove(thumbPath)
+		}
+	}
 	db.Where("user_id = ?", userID).Delete(&Node{})
 	db.Where("user_id = ?", userID).Delete(&Share{})
 	result := db.Delete(&User{}, userID)
