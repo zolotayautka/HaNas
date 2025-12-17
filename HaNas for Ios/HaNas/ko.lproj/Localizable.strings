@@ -1,0 +1,76 @@
+/* App Name */
+"app_name" = "HaNas";
+
+/* Login View */
+"login_title" = "로그인";
+"register_title" = "계정 생성";
+"server_address" = "서버 주소";
+"username" = "사용자 이름";
+"username_placeholder" = "사용자 이름";
+"password" = "비밀번호";
+"password_placeholder" = "비밀번호";
+"login_button" = "로그인";
+"register_button" = "회원가입";
+"switch_to_register" = "계정이 없으신가요? 회원가입";
+"switch_to_login" = "이미 계정이 있으신가요? 로그인";
+"login_failed" = "로그인 실패";
+"register_failed" = "회원가입 실패";
+"connection_error" = "연결 오류";
+"config_save_failed" = "설정 저장 실패";
+"login_invalid_credentials" = "아이디 또는 비밀번호가 올바르지 않습니다.";
+"register_duplicate_id" = "이미 사용 중인 아이디입니다.";
+"incorrectPassword" = "비밀번호가 올바르지 않습니다.";
+
+/* File List */
+"loading" = "로딩 중...";
+"empty_folder" = "빈 폴더";
+"upload_photo" = "사진 업로드";
+"upload_file" = "파일 업로드";
+"new_folder" = "새 폴더";
+"paste" = "붙여넣기";
+"refresh" = "새로고침";
+"logout" = "로그아웃";
+
+/* File Actions */
+"preview" = "미리보기";
+"export" = "내보내기";
+"copy" = "복사";
+"cut" = "잘라내기";
+"rename" = "이름 변경";
+"delete" = "삭제";
+"copy_share_link" = "공유 링크 복사";
+"remove_share" = "공유 제거";
+"create_share_link" = "공유 링크 생성";
+
+/* Alerts */
+"new_folder_title" = "새 폴더";
+"folder_name" = "폴더 이름";
+"folder_name_placeholder" = "폴더 이름";
+"new_folder_message" = "새 폴더의 이름을 입력하세요";
+"rename_title" = "이름 변경";
+"new_name" = "새 이름";
+"new_name_placeholder" = "새 이름";
+"rename_message" = "새 이름을 입력하세요";
+"cancel" = "취소";
+"create" = "생성";
+"ok" = "확인";
+
+/* Share */
+"share" = "공유";
+"share_link_copied" = "공유 링크가 클립보드에 복사되었습니다";
+
+/* Media Preview */
+"close" = "닫기";
+
+/* 중복 및 덮어쓰기 */
+"error" = "오류";
+"name_exists" = "같은 이름의 파일 또는 폴더가 이미 존재합니다.";
+"name_exists_cannot_move" = "같은 이름의 파일 또는 폴더가 이미 존재하여 이동할 수 없습니다.";
+"overwrite_confirm_title" = "덮어쓰기 확인";
+"overwrite_confirm_message" = "같은 이름의 파일이 이미 존재합니다. 덮어쓰시겠습니까?";
+"overwrite" = "덮어쓰기";
+
+/* 회원탈퇴 관련 */
+"deleteAccountConfirm" = "정말로 계정을 삭제하시겠습니까?";
+"accountDeleted" = "계정이 삭제되었습니다.";
+"deleteAccountFailed" = "계정 삭제에 실패했습니다.";
