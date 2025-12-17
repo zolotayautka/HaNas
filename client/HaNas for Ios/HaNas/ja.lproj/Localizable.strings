@@ -5,7 +5,6 @@
 "login_title" = "ログイン";
 "register_title" = "アカウント作成";
 "server_address" = "サーバーアドレス";
-"server_placeholder" = "http://192.168.1.1";
 "username" = "ユーザー名";
 "username_placeholder" = "ユーザー名";
 "password" = "パスワード";

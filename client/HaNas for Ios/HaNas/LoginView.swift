@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject var appState: AppState
-    @State private var serverURL: String = "http://192.168.1.1"
+    @State private var serverURL: String = ""
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var isLoading: Bool = false
@@ -39,7 +39,7 @@ struct LoginView: View {
                         Text(NSLocalizedString("server_address", comment: ""))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        TextField(NSLocalizedString("server_placeholder", comment: ""), text: $serverURL)
+                        TextField("URL", text: $serverURL)
                             .textFieldStyle(.roundedBorder)
                             .autocapitalization(.none)
                             .keyboardType(.URL)
