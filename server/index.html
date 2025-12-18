@@ -41,6 +41,8 @@
     .progress .bar{height:100%;background:linear-gradient(90deg,#4caf50,#a5f18a);width:0%}
     .hidden{display:none}
   </style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 </head>
 <body>
   <div id="authView" class="auth-container">
@@ -55,15 +57,18 @@
       <a id="authToggleLink">Register</a>
     </div>
   </div>
-  
   <div id="mainView" class="container hidden">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h1 id="pathHeader">/</h1>
-      <div class="user-info">
-        <span id="userDisplay"></span>
-        <button id="btnLogout">Logout</button>
-          <button id="btnDeleteAccount" style="color:#900">Delete Account</button>
-      </div>
+        <div class="header-row">
+          <div class="path-and-user">
+            <h1 id="pathHeader">/</h1>
+            <div class="user-info">
+              <span id="userDisplay"></span>
+              <button id="btnLogout">Logout</button>
+              <button id="btnDeleteAccount" style="color:#900">Delete Account</button>
+            </div>
+          </div>
+        </div>
     </div>
     <div class="dir-list">
       <div class="controls">

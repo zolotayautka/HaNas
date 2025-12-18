@@ -1353,6 +1353,12 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Account deleted"))
 }
 
+//go:embed icon.ico
+var favicon []byte
+
+//go:embed apple-touch-icon.png
+var appleTouchIcon []byte
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
@@ -1391,6 +1397,14 @@ func main() {
 	http.HandleFunc("/i18n.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Write([]byte(i18n_script))
+	})
+	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/x-icon")
+		w.Write(favicon)
+	})
+	http.HandleFunc("/apple-touch-icon.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(appleTouchIcon)
 	})
 	fmt.Printf("%s server started at :80\n", programName)
 	http.ListenAndServe(":80", nil)
