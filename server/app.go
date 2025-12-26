@@ -410,7 +410,6 @@ func DeleteNodeRecursive(id uint, userID uint) error {
 	if n.Fid != nil {
 		p := fmt.Sprintf("%s/%d", dataDir, *n.Fid)
 		_ = os.Remove(p)
-		// Delete thumbnail if exists
 		thumbPath := fmt.Sprintf("%s/%d.jpg", thumbDir, *n.Fid)
 		_ = os.Remove(thumbPath)
 	}
