@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -493,6 +494,11 @@ func GetJson(w http.ResponseWriter, r *http.Request) {
 	var share Share
 	if err := db.First(&share, "node_id = ? AND user_id = ?", node.ID, userID).Error; err == nil {
 		node.ShareToken = share.Token
+	}
+	if len(node.Ko) > 1 {
+		sort.Slice(node.Ko, func(i, j int) bool {
+			return node.Ko[i].Name < node.Ko[j].Name
+		})
 	}
 	for i := range node.Ko {
 		if node.Ko[i].Fid != nil {

@@ -28,9 +28,28 @@ struct FileListView: View {
     @State private var deleteAccountPassword = ""
     @State private var deleteAccountError: String = ""
     @EnvironmentObject var appState: AppState
+    @State private var isSelectionMode = false
+    @State private var selectedNodes: Set<Int> = []
+    @State private var copiedNodes: [Node] = []
+    @State private var cutNodes: [Node] = []
     
     var body: some View {
         VStack(spacing: 0) {
+            if isSelectionMode && !selectedNodes.isEmpty {
+                HStack {
+                    Button(action: { handleCopySelected() }) {
+                        Label(NSLocalizedString("copy", comment: ""), systemImage: "doc.on.doc")
+                    }
+                    Button(action: { handleCutSelected() }) {
+                        Label(NSLocalizedString("cut", comment: ""), systemImage: "scissors")
+                    }
+                    Button(role: .destructive, action: { handleDeleteSelected() }) {
+                        Label(NSLocalizedString("delete", comment: ""), systemImage: "trash")
+                    }
+                }
+                .padding(.horizontal)
+                .background(Color(UIColor.systemBackground))
+            }
             if viewModel.isLoading {
                 ProgressView(NSLocalizedString("loading", comment: ""))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -53,6 +72,13 @@ struct FileListView: View {
                             Image(systemName: "arrow.up")
                         }
                     }
+                    Button(action: {
+                        isSelectionMode.toggle()
+                        if !isSelectionMode { selectedNodes.removeAll() }
+                    }) {
+                        Image(systemName: isSelectionMode ? "checkmark.circle.fill" : "checkmark.circle")
+                            .foregroundColor(isSelectionMode ? .blue : .gray)
+                    }
                 }
                 .padding()
                 .background(Color(UIColor.systemBackground))
@@ -63,13 +89,28 @@ struct FileListView: View {
                             GridItem(.adaptive(minimum: 100, maximum: 120), spacing: 15)
                         ], spacing: 15) {
                             ForEach(children, id: \.id) { child in
-                                FileGridItemView(node: child)
-                                    .onTapGesture {
-                                        handleTap(child)
+                                ZStack(alignment: .topTrailing) {
+                                    FileGridItemView(node: child)
+                                        .onTapGesture {
+                                            if isSelectionMode {
+                                                if selectedNodes.contains(child.id) {
+                                                    selectedNodes.remove(child.id)
+                                                } else {
+                                                    selectedNodes.insert(child.id)
+                                                }
+                                            } else {
+                                                handleTap(child)
+                                            }
+                                        }
+                                        .contextMenu {
+                                            fileContextMenu(for: child)
+                                        }
+                                    if isSelectionMode {
+                                        Image(systemName: selectedNodes.contains(child.id) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(selectedNodes.contains(child.id) ? .blue : .gray)
+                                            .padding(4)
                                     }
-                                    .contextMenu {
-                                        fileContextMenu(for: child)
-                                    }
+                                }
                             }
                         }
                         .padding()
@@ -103,7 +144,7 @@ struct FileListView: View {
                     }) {
                         Label(NSLocalizedString("new_folder", comment: ""), systemImage: "folder.badge.plus")
                     }
-                    if copiedNode != nil || cutNode != nil {
+                    if !copiedNodes.isEmpty || !cutNodes.isEmpty {
                         Divider()
                         Button(action: pasteItem) {
                             Label(NSLocalizedString("paste", comment: ""), systemImage: "doc.on.clipboard")
@@ -248,6 +289,48 @@ struct FileListView: View {
             }
         }
     }
+
+    private func handleCopySelected() {
+        guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
+        let nodes = children.filter { selectedNodes.contains($0.id) }
+        if !nodes.isEmpty {
+            copiedNodes = nodes
+            cutNodes = []
+            isSelectionMode = false
+            selectedNodes.removeAll()
+        }
+    }
+
+    private func handleCutSelected() {
+        guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
+        let nodes = children.filter { selectedNodes.contains($0.id) }
+        if !nodes.isEmpty {
+            cutNodes = nodes
+            copiedNodes = []
+            isSelectionMode = false
+            selectedNodes.removeAll()
+        }
+    }
+
+    private func handleDeleteSelected() {
+        guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
+        let nodes = children.filter { selectedNodes.contains($0.id) }
+        guard !nodes.isEmpty else { return }
+        Task {
+            for node in nodes {
+                do {
+                    try await HaNasAPI.shared.deleteNode(id: node.id)
+                } catch {}
+            }
+            await MainActor.run {
+                if let folderId = viewModel.currentFolderId {
+                    viewModel.loadFolder(id: folderId)
+                }
+                isSelectionMode = false
+                selectedNodes.removeAll()
+            }
+        }
+    }
     
     private func configureAudioSessionForBackground() {
         do {
@@ -281,14 +364,14 @@ struct FileListView: View {
             Divider()
         }
         Button(action: {
-            copiedNode = node
-            cutNode = nil
+            copiedNodes = [node]
+            cutNodes = []
         }) {
             Label(NSLocalizedString("copy", comment: ""), systemImage: "doc.on.doc")
         }
         Button(action: {
-            cutNode = node
-            copiedNode = nil
+            cutNodes = [node]
+            copiedNodes = []
         }) {
             Label(NSLocalizedString("cut", comment: ""), systemImage: "scissors")
         }
@@ -434,65 +517,63 @@ struct FileListView: View {
     private func pasteItem() {
         guard let folderId = viewModel.currentFolderId else { return }
         let targetId = folderId == -1 ? nil : folderId
-        if let copied = copiedNode {
-            if let currentFolder = viewModel.currentFolder,
-               let children = currentFolder.ko {
-                let duplicate = children.first { $0.name == copied.name }
-                if duplicate != nil {
-                    overwriteAction = {
-                        Task {
-                            do {
-                                try await HaNasAPI.shared.copyNode(srcId: copied.id, dstId: targetId ?? -1, overwrite: true)
-                                await MainActor.run {
-                                    copiedNode = nil
-                                    viewModel.loadFolder(id: folderId)
+        if !copiedNodes.isEmpty {
+            Task {
+                for node in copiedNodes {
+                    if let currentFolder = viewModel.currentFolder, let children = currentFolder.ko {
+                        let duplicate = children.first { $0.name == node.name }
+                        if duplicate != nil {
+                            overwriteAction = { [folderId, targetId] in
+                                Task {
+                                    do {
+                                        try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: targetId ?? -1, overwrite: true)
+                                        await MainActor.run {
+                                            viewModel.loadFolder(id: folderId)
+                                        }
+                                    } catch {}
                                 }
-                            } catch {}
+                            }
+                            showingOverwriteAlert = true
+                            return
                         }
                     }
-                    showingOverwriteAlert = true
-                    return
+                    do {
+                        try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: targetId ?? -1, overwrite: false)
+                    } catch {}
+                }
+                await MainActor.run {
+                    copiedNodes = []
+                    viewModel.loadFolder(id: folderId)
                 }
             }
-            
+        } else if !cutNodes.isEmpty {
             Task {
-                do {
-                    try await HaNasAPI.shared.copyNode(srcId: copied.id, dstId: targetId ?? -1, overwrite: false)
-                    copiedNode = nil
-                    await MainActor.run {
-                        viewModel.loadFolder(id: folderId)
-                    }
-                } catch {}
-            }
-        } else if let cut = cutNode {
-            if let currentFolder = viewModel.currentFolder,
-               let children = currentFolder.ko {
-                let duplicate = children.first { $0.name == cut.name && $0.id != cut.id }
-                if duplicate != nil {
-                    overwriteAction = {
-                        Task {
-                            do {
-                                try await HaNasAPI.shared.moveNode(id: cut.id, newOyaId: targetId ?? -1, overwrite: true)
-                                await MainActor.run {
-                                    cutNode = nil
-                                    viewModel.loadFolder(id: folderId)
+                for node in cutNodes {
+                    if let currentFolder = viewModel.currentFolder, let children = currentFolder.ko {
+                        let duplicate = children.first { $0.name == node.name && $0.id != node.id }
+                        if duplicate != nil {
+                            overwriteAction = { [folderId, targetId] in
+                                Task {
+                                    do {
+                                        try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: targetId ?? -1, overwrite: true)
+                                        await MainActor.run {
+                                            viewModel.loadFolder(id: folderId)
+                                        }
+                                    } catch {}
                                 }
-                            } catch {}
+                            }
+                            showingOverwriteAlert = true
+                            return
                         }
                     }
-                    showingOverwriteAlert = true
-                    return
+                    do {
+                        try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: targetId ?? -1, overwrite: false)
+                    } catch {}
                 }
-            }
-            
-            Task {
-                do {
-                    try await HaNasAPI.shared.moveNode(id: cut.id, newOyaId: targetId ?? -1, overwrite: false)
-                    cutNode = nil
-                    await MainActor.run {
-                        viewModel.loadFolder(id: folderId)
-                    }
-                } catch {}
+                await MainActor.run {
+                    cutNodes = []
+                    viewModel.loadFolder(id: folderId)
+                }
             }
         }
     }

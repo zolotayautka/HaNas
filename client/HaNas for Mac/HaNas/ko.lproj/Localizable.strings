@@ -1,3 +1,4 @@
+"select_mode" = "선택";
 "error_unauthorized_friendly" = "아이디 또는 비밀번호가 올바르지 않습니다. 다시 확인해주세요.";
 "loop_repeat" = "무한 반복";
 "loop_cancel" = "반복 해제";

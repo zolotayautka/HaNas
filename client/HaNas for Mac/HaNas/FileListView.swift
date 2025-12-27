@@ -90,12 +90,14 @@ struct FolderContentView: View {
     @State private var showingRenameAlert = false
     @State private var renameNode: Node?
     @State private var renameName = ""
-    @State private var copiedNode: Node?
-    @State private var cutNode: Node?
+    @State private var copiedNodes: Set<Node>? = nil
+    @State private var cutNodes: Set<Node>? = nil
     @State private var showingDuplicateAlert = false
     @State private var duplicateAlertMessage = ""
     @State private var showingOverwriteAlert = false
     @State private var overwriteAction: (() -> Void)?
+    @State private var selectedFiles: Set<Node> = []
+    @State private var selectionMode: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -105,24 +107,51 @@ struct FolderContentView: View {
                     .font(.headline)
                     .foregroundColor(.secondary)
                 Spacer()
-                Button(action: {
-                    newFolderName = ""
-                    showingNewFolderAlert = true
-                }) {
-                    Label(NSLocalizedString("new_folder", comment: ""), systemImage: "folder.badge.plus")
-                }
-                .buttonStyle(.bordered)
-                .disabled(currentFolder == nil)
-                Button(action: uploadFile) {
-                    Label(NSLocalizedString("upload_file", comment: ""), systemImage: "arrow.up.doc")
-                }
-                .buttonStyle(.bordered)
-                .disabled(currentFolder == nil)
-                if supportsCopyAPI, (copiedNode != nil || cutNode != nil) {
-                    Button(action: pasteItem) {
-                        Label(NSLocalizedString("paste", comment: ""), systemImage: "doc.on.clipboard")
+                if selectionMode {
+                    Button(action: { selectionMode = false; selectedFiles.removeAll() }) {
+                        Label(NSLocalizedString("cancel", comment: ""), systemImage: "xmark.circle")
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
+                    .tint(.gray)
+                    if !selectedFiles.isEmpty {
+                        Button(action: copySelectedFiles) {
+                            Label(NSLocalizedString("copy", comment: ""), systemImage: "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+                        Button(action: cutSelectedFiles) {
+                            Label(NSLocalizedString("cut", comment: ""), systemImage: "scissors")
+                        }
+                        .buttonStyle(.bordered)
+                        Button(action: deleteSelectedFiles) {
+                            Label(NSLocalizedString("delete", comment: ""), systemImage: "trash")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red)
+                    }
+                } else {
+                    Button(action: { selectionMode = true }) {
+                        Label(NSLocalizedString("select_mode", comment: "선택"), systemImage: "checkmark.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    Button(action: {
+                        newFolderName = ""
+                        showingNewFolderAlert = true
+                    }) {
+                        Label(NSLocalizedString("new_folder", comment: ""), systemImage: "folder.badge.plus")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(currentFolder == nil)
+                    Button(action: uploadFile) {
+                        Label(NSLocalizedString("upload_file", comment: ""), systemImage: "arrow.up.doc")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(currentFolder == nil)
+                    if supportsCopyAPI, ((copiedNodes != nil && !(copiedNodes?.isEmpty ?? true)) || (cutNodes != nil && !(cutNodes?.isEmpty ?? true))) {
+                        Button(action: pasteItem) {
+                            Label(NSLocalizedString("paste", comment: ""), systemImage: "doc.on.clipboard")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 }
             }
             .padding()
@@ -134,9 +163,20 @@ struct FolderContentView: View {
                         GridItem(.adaptive(minimum: 120, maximum: 150), spacing: 20)
                     ], spacing: 20) {
                         ForEach(children, id: \.id) { child in
-                            FileGridItemView(node: child, viewModel: viewModel)
+                            FileGridItemView(node: child, viewModel: viewModel, isSelected: selectedFiles.contains(child))
+                                .onTapGesture {
+                                    if selectionMode {
+                                        if selectedFiles.contains(child) {
+                                            selectedFiles.remove(child)
+                                        } else {
+                                            selectedFiles.insert(child)
+                                        }
+                                    }
+                                }
                                 .onTapGesture(count: 2) {
-                                    handleDoubleClick(child)
+                                    if !selectionMode {
+                                        handleDoubleClick(child)
+                                    }
                                 }
                                 .contextMenu {
                                     if !child.isDir {
@@ -146,13 +186,13 @@ struct FolderContentView: View {
                                         Divider()
                                     }
                                     Button(NSLocalizedString("copy", comment: "")) {
-                                        copiedNode = child
-                                        cutNode = nil
+                                        copiedNodes = [child]
+                                        cutNodes = nil
                                     }
                                     .disabled(!supportsCopyAPI)
                                     Button(NSLocalizedString("cut", comment: "")) {
-                                        cutNode = child
-                                        copiedNode = nil
+                                        cutNodes = [child]
+                                        copiedNodes = nil
                                     }
                                     Divider()
                                     Button(NSLocalizedString("rename", comment: "")) {
@@ -320,7 +360,6 @@ struct FolderContentView: View {
         panel.begin { response in
             guard response == .OK else { return }
             Task {
-                // Check for duplicate names first
                 let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
                 let existingNames = currentFolder?.ko?.map { $0.name } ?? []
                 
@@ -367,85 +406,98 @@ struct FolderContentView: View {
         }
     }
     
+    private func copySelectedFiles() {
+        guard !selectedFiles.isEmpty else { return }
+        copiedNodes = selectedFiles
+        cutNodes = nil
+        selectionMode = false
+        selectedFiles.removeAll()
+    }
+
+    private func cutSelectedFiles() {
+        guard !selectedFiles.isEmpty else { return }
+        cutNodes = selectedFiles
+        copiedNodes = nil
+        selectionMode = false
+        selectedFiles.removeAll()
+    }
+    
+    private func deleteSelectedFiles() {
+        guard !selectedFiles.isEmpty else { return }
+        let filesToDelete = selectedFiles
+        Task {
+            for file in filesToDelete {
+                do {
+                    try await HaNasAPI.shared.deleteNode(id: file.id)
+                } catch {}
+            }
+            await MainActor.run {
+                if let parentId = selectedFolderID {
+                    viewModel.loadFolder(id: parentId, forceRefresh: true)
+                    viewModel.refreshTree()
+                }
+                selectionMode = false
+                selectedFiles.removeAll()
+            }
+        }
+    }
+    
     private func pasteItem() {
         guard let parentId = selectedFolderID else { return }
-        
-        if let node = copiedNode {
-            // Check for duplicate before copying
-            if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
-               let children = currentFolder.ko {
-                let duplicate = children.first { $0.name == node.name }
-                if duplicate != nil {
-                    // Ask user to confirm overwrite
-                    overwriteAction = {
-                        Task {
-                            do {
-                                try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: parentId, overwrite: true)
-                                await MainActor.run {
-                                    viewModel.loadFolder(id: parentId, forceRefresh: true)
-                                    viewModel.refreshTree()
-                                    copiedNode = nil
-                                }
-                            } catch {
-                            }
-                        }
-                    }
-                    showingOverwriteAlert = true
-                    return
-                }
-            }
-            
+        if let nodes = copiedNodes, !nodes.isEmpty {
             Task {
-                do {
-                    try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: parentId, overwrite: false)
-                    await MainActor.run {
-                        viewModel.loadFolder(id: parentId, forceRefresh: true)
-                        viewModel.refreshTree()
-                        copiedNode = nil
-                    }
-                } catch {
-                }
-            }
-        } else if let node = cutNode {
-            // Check for duplicate before moving
-            if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
-               let children = currentFolder.ko {
-                let duplicate = children.first { $0.name == node.name && $0.id != node.id }
-                if duplicate != nil {
-                    // Ask user to confirm overwrite
-                    overwriteAction = {
-                        Task {
-                            do {
-                                try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId, overwrite: true)
-                                await MainActor.run {
-                                    if let oldParentId = node.oyaId {
-                                        viewModel.loadFolder(id: oldParentId, forceRefresh: true)
-                                    }
-                                    viewModel.loadFolder(id: parentId, forceRefresh: true)
-                                    viewModel.refreshTree()
-                                    cutNode = nil
-                                }
-                            } catch {
-                            }
+                let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID)
+                let existingNames = currentFolder?.ko?.map { $0.name } ?? []
+                for node in nodes {
+                    let isDuplicate = existingNames.contains(node.name)
+                    if isDuplicate {
+                        let shouldOverwrite = await MainActor.run {
+                            let alert = NSAlert()
+                            alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
+                            alert.informativeText = String(format: NSLocalizedString("file_exists_overwrite", comment: ""), node.name)
+                            alert.addButton(withTitle: NSLocalizedString("overwrite", comment: ""))
+                            alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+                            alert.alertStyle = .warning
+                            return alert.runModal() == .alertFirstButtonReturn
                         }
+                        if !shouldOverwrite { continue }
                     }
-                    showingOverwriteAlert = true
-                    return
+                    do {
+                        try await HaNasAPI.shared.copyNode(srcId: node.id, dstId: parentId, overwrite: isDuplicate)
+                    } catch {}
+                }
+                await MainActor.run {
+                    viewModel.loadFolder(id: parentId, forceRefresh: true)
+                    viewModel.refreshTree()
+                    copiedNodes = nil
                 }
             }
-            
+        } else if let nodes = cutNodes, !nodes.isEmpty {
             Task {
-                do {
-                    try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId, overwrite: false)
-                    await MainActor.run {
-                        if let oldParentId = node.oyaId {
-                            viewModel.loadFolder(id: oldParentId, forceRefresh: true)
+                let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID)
+                let existingNames = currentFolder?.ko?.map { $0.name } ?? []
+                for node in nodes {
+                    let isDuplicate = existingNames.contains(node.name)
+                    if isDuplicate {
+                        let shouldOverwrite = await MainActor.run {
+                            let alert = NSAlert()
+                            alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
+                            alert.informativeText = String(format: NSLocalizedString("file_exists_overwrite", comment: ""), node.name)
+                            alert.addButton(withTitle: NSLocalizedString("overwrite", comment: ""))
+                            alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+                            alert.alertStyle = .warning
+                            return alert.runModal() == .alertFirstButtonReturn
                         }
-                        viewModel.loadFolder(id: parentId, forceRefresh: true)
-                        viewModel.refreshTree()
-                        cutNode = nil
+                        if !shouldOverwrite { continue }
                     }
-                } catch {
+                    do {
+                        try await HaNasAPI.shared.moveNode(id: node.id, newOyaId: parentId, overwrite: isDuplicate)
+                    } catch {}
+                }
+                await MainActor.run {
+                    viewModel.loadFolder(id: parentId, forceRefresh: true)
+                    viewModel.refreshTree()
+                    cutNodes = nil
                 }
             }
         }
@@ -453,8 +505,6 @@ struct FolderContentView: View {
     
     private func renameItem() {
         guard let node = renameNode else { return }
-        
-        // Check for duplicate names in the current folder
         if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
            let children = currentFolder.ko {
             let duplicate = children.first { $0.name == renameName && $0.id != node.id }
@@ -463,8 +513,7 @@ struct FolderContentView: View {
                 showingDuplicateAlert = true
                 return
             }
-        }
-        
+        } 
         Task {
             do {
                 try await HaNasAPI.shared.renameNode(id: node.id, newName: renameName)
@@ -594,15 +643,15 @@ struct FolderTreeView: View {
 struct FileGridItemView: View {
     let node: Node
     @ObservedObject var viewModel: FileListViewModel
+    var isSelected: Bool = false
     @State private var thumbnail: NSImage?
 
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(isSelected ? Color.accentColor.opacity(0.3) : Color(NSColor.controlBackgroundColor))
                     .frame(width: 100, height: 100)
-                
                 Group {
                     if let thumbnail = thumbnail {
                         Image(nsImage: thumbnail)
@@ -620,13 +669,17 @@ struct FileGridItemView: View {
                             .foregroundColor(fileColor(for: node.name))
                     }
                 }
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.accentColor, lineWidth: 3)
+                        .frame(width: 100, height: 100)
+                }
             }
             Text(node.name)
                 .font(.caption)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(width: 100)
-            
             if !node.isDir, let size = node.size {
                 Text(formatFileSize(size))
                     .font(.caption2)
@@ -650,7 +703,7 @@ struct FileGridItemView: View {
                         thumbnail = image
                     }
                 }
-            } catch {}
+            } catch {
             }
         }
     }
@@ -705,6 +758,7 @@ struct FileGridItemView: View {
         formatter.countStyle = .file
         return formatter.string(fromByteCount: bytes)
     }
+}
 
 struct MediaPreviewView: View {
     let node: Node
@@ -830,14 +884,14 @@ struct MediaPreviewView: View {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "video")
                     await MainActor.run {
                         videoURL = url
-                        mediaData = Data() // placeholder to trigger mediaContent path
+                        mediaData = Data()
                         isLoading = false
                     }
                 } else if ["mp3", "wav", "m4a", "aac"].contains(ext) {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "audio")
                     await MainActor.run {
                         audioURL = url
-                        mediaData = Data() // placeholder
+                        mediaData = Data()
                         isLoading = false
                     }
                 } else {

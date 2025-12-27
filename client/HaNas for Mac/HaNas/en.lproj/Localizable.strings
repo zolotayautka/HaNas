@@ -1,3 +1,4 @@
+"select_mode" = "Select";
 "error_unauthorized_friendly" = "Incorrect username or password. Please check and try again.";
 "loop_repeat" = "Loop";
 "loop_cancel" = "Cancel Loop";
