@@ -360,6 +360,7 @@ struct FolderContentView: View {
         panel.begin { response in
             guard response == .OK else { return }
             Task {
+                // Check for duplicate names first
                 let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
                 let existingNames = currentFolder?.ko?.map { $0.name } ?? []
                 
@@ -410,6 +411,7 @@ struct FolderContentView: View {
         guard !selectedFiles.isEmpty else { return }
         copiedNodes = selectedFiles
         cutNodes = nil
+        // 선택모드 해제 및 선택 해제
         selectionMode = false
         selectedFiles.removeAll()
     }
@@ -418,6 +420,7 @@ struct FolderContentView: View {
         guard !selectedFiles.isEmpty else { return }
         cutNodes = selectedFiles
         copiedNodes = nil
+        // 선택모드 해제 및 선택 해제
         selectionMode = false
         selectedFiles.removeAll()
     }
@@ -429,7 +432,9 @@ struct FolderContentView: View {
             for file in filesToDelete {
                 do {
                     try await HaNasAPI.shared.deleteNode(id: file.id)
-                } catch {}
+                } catch {
+                    // 에러 무시 또는 필요시 처리
+                }
             }
             await MainActor.run {
                 if let parentId = selectedFolderID {
@@ -505,6 +510,8 @@ struct FolderContentView: View {
     
     private func renameItem() {
         guard let node = renameNode else { return }
+        
+        // Check for duplicate names in the current folder
         if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
            let children = currentFolder.ko {
             let duplicate = children.first { $0.name == renameName && $0.id != node.id }
@@ -513,7 +520,8 @@ struct FolderContentView: View {
                 showingDuplicateAlert = true
                 return
             }
-        } 
+        }
+        
         Task {
             do {
                 try await HaNasAPI.shared.renameNode(id: node.id, newName: renameName)
@@ -884,14 +892,14 @@ struct MediaPreviewView: View {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "video")
                     await MainActor.run {
                         videoURL = url
-                        mediaData = Data()
+                        mediaData = Data() // placeholder to trigger mediaContent path
                         isLoading = false
                     }
                 } else if ["mp3", "wav", "m4a", "aac"].contains(ext) {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "audio")
                     await MainActor.run {
                         audioURL = url
-                        mediaData = Data()
+                        mediaData = Data() // placeholder
                         isLoading = false
                     }
                 } else {
