@@ -9,6 +9,8 @@ import MediaPlayer
 struct FileListView: View {
     @StateObject private var viewModel = FileListViewModel()
     @State private var selectedFile: Node?
+    @State private var showingNodeInfo: Bool = false
+    @State private var nodeInfoTarget: Node? = nil
     @State private var showingImagePicker = false
     @State private var showingDocumentPicker = false
     @State private var showingNewFolderAlert = false
@@ -34,7 +36,8 @@ struct FileListView: View {
     @State private var cutNodes: [Node] = []
     
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            VStack(spacing: 0) {
             if isSelectionMode && !selectedNodes.isEmpty {
                 HStack {
                     Button(action: { handleCopySelected() }) {
@@ -48,7 +51,7 @@ struct FileListView: View {
                     }
                 }
                 .padding(.horizontal)
-                .background(Color(UIColor.systemBackground))
+                .background(Color(UIColor.systemBackground)) // 배경색을 시스템 배경색과 일치
             }
             if viewModel.isLoading {
                 ProgressView(NSLocalizedString("loading", comment: ""))
@@ -72,6 +75,7 @@ struct FileListView: View {
                             Image(systemName: "arrow.up")
                         }
                     }
+                    // 선택모드 토글 버튼
                     Button(action: {
                         isSelectionMode.toggle()
                         if !isSelectionMode { selectedNodes.removeAll() }
@@ -125,6 +129,16 @@ struct FileListView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            }
+            }
+            if showingNodeInfo, let node = nodeInfoTarget {
+                VStack {
+                    Spacer()
+                    NodeInfoToast(node: node)
+                        .padding(.bottom, 60)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut, value: showingNodeInfo)
             }
         }
         .navigationTitle(NSLocalizedString("app_name", comment: ""))
@@ -289,7 +303,8 @@ struct FileListView: View {
             }
         }
     }
-
+    
+    // 여러 파일 복사
     private func handleCopySelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -301,6 +316,7 @@ struct FileListView: View {
         }
     }
 
+    // 여러 파일 잘라내기
     private func handleCutSelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -312,6 +328,7 @@ struct FileListView: View {
         }
     }
 
+    // 여러 파일 삭제
     private func handleDeleteSelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -320,7 +337,9 @@ struct FileListView: View {
             for node in nodes {
                 do {
                     try await HaNasAPI.shared.deleteNode(id: node.id)
-                } catch {}
+                } catch {
+                    // 에러 무시, 필요시 에러 처리
+                }
             }
             await MainActor.run {
                 if let folderId = viewModel.currentFolderId {
@@ -341,6 +360,16 @@ struct FileListView: View {
     
     @ViewBuilder
     private func fileContextMenu(for node: Node) -> some View {
+        Button(action: {
+            nodeInfoTarget = node
+            showingNodeInfo = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                showingNodeInfo = false
+            }
+        }) {
+            Label(NSLocalizedString("node_info", comment: ""), systemImage: node.isDir ? "folder.fill" : "doc.fill")
+        }
+        Divider()
         if !node.isDir {
             Button(action: { selectedFile = node }) {
                 Label(NSLocalizedString("preview", comment: ""), systemImage: "eye")
