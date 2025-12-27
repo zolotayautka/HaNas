@@ -231,10 +231,6 @@ func UploadFile(data []byte) (uint, error) {
 }
 
 func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID uint) (uint, error) {
-	return uploadNodeWithTransaction(filename, data, isDir, oyaID, userID)
-}
-
-func uploadNodeWithTransaction(filename string, data []byte, isDir bool, oyaID *uint, userID uint) (uint, error) {
 	var nodeID uint
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var existing Node
