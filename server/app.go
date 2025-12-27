@@ -493,6 +493,9 @@ func GetJson(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(node.Ko) > 1 {
 		sort.Slice(node.Ko, func(i, j int) bool {
+			if node.Ko[i].IsDir != node.Ko[j].IsDir {
+				return node.Ko[i].IsDir
+			}
 			return node.Ko[i].Name < node.Ko[j].Name
 		})
 	}
