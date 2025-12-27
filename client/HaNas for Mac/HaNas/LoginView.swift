@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct LoginView: View {
-    @State private var serverURL: String = "http://localhost"
+    @State private var serverURL: String = ""
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var isLoading: Bool = false
@@ -31,7 +31,7 @@ struct LoginView: View {
                 Text(NSLocalizedString("server_address", comment: ""))
                     .font(.caption)
                     .foregroundColor(.secondary)
-                TextField("http://localhost", text: $serverURL)
+                TextField("URL", text: $serverURL)
                     .textFieldStyle(.roundedBorder)
             }
             VStack(alignment: .leading, spacing: 8) {
