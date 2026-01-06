@@ -503,7 +503,7 @@ func GetJson(w http.ResponseWriter, r *http.Request) {
 		if st, err := os.Stat(p); err == nil {
 			node.Size = st.Size()
 		}
-	} else if node.IsDir {
+	} else {
 		node.Size = calculateDirSize(node.ID, userID)
 	}
 	var share Share
