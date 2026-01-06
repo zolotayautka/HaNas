@@ -53,7 +53,7 @@ struct FileListView: View {
                     }
                 }
                 .padding(.horizontal)
-                .background(Color(UIColor.systemBackground)) // 배경색을 시스템 배경색과 일치
+                .background(Color(UIColor.systemBackground))
             }
             if viewModel.isLoading {
                 ProgressView(NSLocalizedString("loading", comment: ""))
@@ -77,7 +77,6 @@ struct FileListView: View {
                             Image(systemName: "arrow.up")
                         }
                     }
-                    // 선택모드 토글 버튼
                     Button(action: {
                         isSelectionMode.toggle()
                         if !isSelectionMode { selectedNodes.removeAll() }
@@ -142,7 +141,6 @@ struct FileListView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut, value: showingNodeInfo)
             }
-            
             UploadProgressOverlay()
         }
         .navigationTitle(NSLocalizedString("app_name", comment: ""))
@@ -277,7 +275,6 @@ struct FileListView: View {
         }
     }
     
-    // 여러 파일 복사
     private func handleCopySelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -289,7 +286,6 @@ struct FileListView: View {
         }
     }
 
-    // 여러 파일 잘라내기
     private func handleCutSelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -301,7 +297,6 @@ struct FileListView: View {
         }
     }
 
-    // 여러 파일 삭제
     private func handleDeleteSelected() {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
@@ -316,9 +311,7 @@ struct FileListView: View {
             for node in nodes {
                 do {
                     try await HaNasAPI.shared.deleteNode(id: node.id)
-                } catch {
-                    // 에러 무시, 필요시 에러 처리
-                }
+                } catch {}
             }
             await MainActor.run {
                 if let folderId = viewModel.currentFolderId {

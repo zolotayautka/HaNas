@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-// 업로드 진행 상태를 추적하는 모델
 struct UploadTask: Identifiable {
     let id: String
     let filename: String
@@ -18,7 +17,6 @@ struct UploadTask: Identifiable {
     }
 }
 
-// 업로드 매니저: 여러 업로드 작업 관리
 @MainActor
 class UploadManager: ObservableObject {
     static let shared = UploadManager()
@@ -42,8 +40,6 @@ class UploadManager: ObservableObject {
         if let index = uploadTasks.firstIndex(where: { $0.id == uploadId }) {
             uploadTasks[index].progress = 1.0
             uploadTasks[index].isComplete = true
-            
-            // 3초 후 자동으로 제거
             Task {
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 await removeTask(uploadId: uploadId)
@@ -55,8 +51,6 @@ class UploadManager: ObservableObject {
         if let index = uploadTasks.firstIndex(where: { $0.id == uploadId }) {
             uploadTasks[index].error = error
             uploadTasks[index].isComplete = true
-            
-            // 5초 후 자동으로 제거
             Task {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 await removeTask(uploadId: uploadId)
@@ -69,14 +63,12 @@ class UploadManager: ObservableObject {
     }
 }
 
-// 단일 업로드 작업 토스트 뷰
 struct UploadTaskToast: View {
     let task: UploadTask
     @ObservedObject var manager: UploadManager
     
     var body: some View {
         HStack(spacing: 12) {
-            // 아이콘
             ZStack {
                 if let error = task.error {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -93,14 +85,11 @@ struct UploadTaskToast: View {
                 }
             }
             .frame(width: 32, height: 32)
-            
-            // 파일 정보 및 프로그레스
             VStack(alignment: .leading, spacing: 6) {
                 Text(task.filename)
                     .font(.system(size: 13, weight: .medium))
                     .lineLimit(1)
                     .foregroundColor(.primary)
-                
                 if let error = task.error {
                     Text(error)
                         .font(.system(size: 11))
@@ -118,7 +107,6 @@ struct UploadTaskToast: View {
                                 .foregroundColor(.secondary)
                             Spacer()
                         }
-                        
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 3)
@@ -134,8 +122,6 @@ struct UploadTaskToast: View {
                     }
                 }
             }
-            
-            // 닫기 버튼
             if task.isComplete || task.error != nil {
                 Button(action: {
                     manager.removeTask(uploadId: task.id)
@@ -157,7 +143,6 @@ struct UploadTaskToast: View {
     }
 }
 
-// 전체 업로드 프로그레스 토스트 컨테이너
 struct UploadProgressToastView: View {
     @ObservedObject var manager: UploadManager
     
@@ -176,7 +161,6 @@ struct UploadProgressToastView: View {
     }
 }
 
-// FileListView에 오버레이로 추가할 뷰
 struct UploadProgressOverlay: View {
     @ObservedObject var manager = UploadManager.shared
     
@@ -193,4 +177,3 @@ struct UploadProgressOverlay: View {
         .allowsHitTesting(false)
     }
 }
-

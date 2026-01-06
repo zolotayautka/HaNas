@@ -108,7 +108,7 @@ class HaNasAPI {
     private let session: URLSession
     
     private init() {
-        self.baseURL = "http://localhost"
+        self.baseURL = ""
         let config = URLSessionConfiguration.default
         config.httpCookieAcceptPolicy = .always
         config.httpShouldSetCookies = true
@@ -286,14 +286,11 @@ class HaNasAPI {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = body
-        
-        // SSE를 통한 서버 측 프로그레스 추적
         if let uploadId = uploadId, let progressCallback = progressCallback {
             Task {
                 await monitorUploadProgress(uploadId: uploadId, progressCallback: progressCallback)
             }
         }
-        
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw HaNasError.invalidResponse
@@ -311,11 +308,9 @@ class HaNasAPI {
     private func monitorUploadProgress(uploadId: String, progressCallback: @escaping (Double) -> Void) async {
         let endpoint = "/upload/progress?upload_id=\(uploadId)"
         guard let url = URL(string: baseURL + endpoint) else { return }
-        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        
         do {
             let (bytes, _) = try await session.bytes(for: request)
             
@@ -332,9 +327,7 @@ class HaNasAPI {
                     }
                 }
             }
-        } catch {
-            // SSE 연결 실패는 무시 (업로드 자체는 계속 진행)
-        }
+        } catch {}
     }
     
     func createFolder(name: String, oyaId: Int? = nil) async throws -> UploadResponse {

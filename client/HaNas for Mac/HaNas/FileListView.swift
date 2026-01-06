@@ -325,7 +325,6 @@ struct FolderContentView: View {
     private func openPreview(_ node: Node) {
         let ext = (node.name as NSString).pathExtension.lowercased()
         let mediaExts = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "mp4", "mov", "m4v", "mp3", "wav", "m4a", "aac", "pdf"]
-        
         if mediaExts.contains(ext) {
             onFileSelect(node)
         } else {
@@ -390,7 +389,6 @@ struct FolderContentView: View {
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
-
         panel.begin { response in
             guard response == .OK else { return }
             uploadFiles(urls: panel.urls, parentId: parentId)
@@ -402,7 +400,6 @@ struct FolderContentView: View {
         
         Task {
             var fileURLs: [URL] = []
-            
             for provider in providers {
                 if provider.hasItemConformingToTypeIdentifier("public.file-url") {
                     do {
@@ -414,19 +411,15 @@ struct FolderContentView: View {
                                 fileURLs.append(url)
                             }
                         }
-                    } catch {
-                        // 실패한 항목은 무시
-                    }
+                    } catch {}
                 }
             }
-            
             if !fileURLs.isEmpty {
                 await MainActor.run {
                     uploadFiles(urls: fileURLs, parentId: parentId)
                 }
             }
         }
-        
         return true
     }
     
@@ -442,8 +435,6 @@ struct FolderContentView: View {
                     await uploadSingleFile(url: url, parentId: parentId)
                 }
             }
-            
-            // 모든 업로드 완료 후 새로고침
             await MainActor.run {
                 viewModel.loadFolder(id: parentId, forceRefresh: true)
                 viewModel.refreshTree()
@@ -452,13 +443,10 @@ struct FolderContentView: View {
     }
     
     private func uploadDirectory(url: URL, parentId: Int) async {
-        let folderName = url.lastPathComponent
-        
-        // 중복 확인
+        let folderName = url.lastPathComponent  
         let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
         let existingNames = currentFolder?.ko?.map { $0.name } ?? []
         let isDuplicate = existingNames.contains(folderName)
-        
         if isDuplicate {
             let shouldOverwrite = await MainActor.run {
                 let alert = NSAlert()
@@ -473,19 +461,13 @@ struct FolderContentView: View {
                 return
             }
         }
-        
-        // 폴더 생성
         do {
             let response = try await HaNasAPI.shared.createFolder(name: folderName, oyaId: parentId)
             guard let newFolderId = response.nodeId else { return }
-            
-            // 폴더 내부 파일 및 하위 폴더 업로드
             let fileManager = FileManager.default
             if let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) {
                 var directoriesToCreate: [(URL, Int)] = []
                 var filesToUpload: [(URL, Int)] = []
-                
-                // 먼저 모든 항목을 수집
                 for case let fileURL as URL in enumerator {
                     let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey])
                     let isDir = resourceValues?.isDirectory ?? false
@@ -497,8 +479,6 @@ struct FolderContentView: View {
                         filesToUpload.append((fileURL, newFolderId))
                     }
                 }
-                
-                // 폴더 구조를 먼저 생성
                 var folderMap: [String: Int] = [url.path: newFolderId]
                 for (dirURL, _) in directoriesToCreate {
                     let parentPath = dirURL.deletingLastPathComponent().path
@@ -508,13 +488,9 @@ struct FolderContentView: View {
                             if let createdId = response.nodeId {
                                 folderMap[dirURL.path] = createdId
                             }
-                        } catch {
-                            // 폴더 생성 실패 시 계속 진행
-                        }
+                        } catch {}
                     }
                 }
-                
-                // 파일 업로드
                 for (fileURL, _) in filesToUpload {
                     let parentPath = fileURL.deletingLastPathComponent().path
                     if let targetParentId = folderMap[parentPath] {
@@ -532,12 +508,9 @@ struct FolderContentView: View {
     
     private func uploadSingleFile(url: URL, parentId: Int) async {
         let filename = url.lastPathComponent
-        
-        // 중복 확인
         let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
         let existingNames = currentFolder?.ko?.map { $0.name } ?? []
         let isDuplicate = existingNames.contains(filename)
-        
         if isDuplicate {
             let shouldOverwrite = await MainActor.run {
                 let alert = NSAlert()
@@ -552,12 +525,9 @@ struct FolderContentView: View {
                 return
             }
         }
-        
-        // 프로그레스 토스트 시작
         let uploadId = await MainActor.run {
             UploadManager.shared.addTask(filename: filename)
         }
-        
         do {
             try await HaNasAPI.shared.uploadFileMultipart(
                 filename: filename,
@@ -584,7 +554,6 @@ struct FolderContentView: View {
         guard !selectedFiles.isEmpty else { return }
         copiedNodes = selectedFiles
         cutNodes = nil
-        // 선택모드 해제 및 선택 해제
         selectionMode = false
         selectedFiles.removeAll()
     }
@@ -593,7 +562,6 @@ struct FolderContentView: View {
         guard !selectedFiles.isEmpty else { return }
         cutNodes = selectedFiles
         copiedNodes = nil
-        // 선택모드 해제 및 선택 해제
         selectionMode = false
         selectedFiles.removeAll()
     }
@@ -610,9 +578,7 @@ struct FolderContentView: View {
             for file in files {
                 do {
                     try await HaNasAPI.shared.deleteNode(id: file.id)
-                } catch {
-                    // 에러 무시 또는 필요시 처리
-                }
+                } catch {}
             }
             await MainActor.run {
                 if let parentId = selectedFolderID {
@@ -689,8 +655,6 @@ struct FolderContentView: View {
     
     private func renameItem() {
         guard let node = renameNode else { return }
-        
-        // Check for duplicate names in the current folder
         if let currentFolder = viewModel.getCurrentFolder(id: selectedFolderID),
            let children = currentFolder.ko {
             let duplicate = children.first { $0.name == renameName && $0.id != node.id }
@@ -749,7 +713,6 @@ struct FolderContentView: View {
             do {
                 let token = try await HaNasAPI.shared.createShare(nodeId: node.id)
                 let shareURL = "\(HaNasAPI.shared.getBaseURL())/s/\(token)"
-                
                 await MainActor.run {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
@@ -1081,14 +1044,14 @@ struct MediaPreviewView: View {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "video")
                     await MainActor.run {
                         videoURL = url
-                        mediaData = Data() // placeholder to trigger mediaContent path
+                        mediaData = Data()
                         isLoading = false
                     }
                 } else if ["mp3", "wav", "m4a", "aac"].contains(ext) {
                     let url = try await HaNasAPI.shared.getStreamURL(id: node.id, type: "audio")
                     await MainActor.run {
                         audioURL = url
-                        mediaData = Data() // placeholder
+                        mediaData = Data()
                         isLoading = false
                     }
                 } else {
@@ -1114,8 +1077,7 @@ struct MediaPreviewView: View {
             do {
                 let data = try await HaNasAPI.shared.downloadFile(id: node.id)
                 showSavePanel(with: data)
-            } catch {
-            }
+            } catch {}
         }
     }
     
@@ -1124,7 +1086,6 @@ struct MediaPreviewView: View {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = node.name
         panel.canCreateDirectories = true
-        
         if let window = NSApp.keyWindow ?? NSApp.windows.first {
             panel.beginSheetModal(for: window) { response in
                 guard response == .OK, let url = panel.url else { return }
@@ -1194,8 +1155,7 @@ class FileListViewModel: ObservableObject {
                     self.loadedFolders[id] = node
                     updateNodeInTree(node)
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
     
@@ -1216,8 +1176,6 @@ class FileListViewModel: ObservableObject {
                     self.rootNode = node
                     self.loadedFolders[node.id] = node
                     self.isLoadingTree = false
-                    
-                    // 현재 선택된 폴더가 있으면 다시 로드
                     if let folderId = folderToReload, folderId != node.id {
                         self.loadFolder(id: folderId, forceRefresh: true)
                     }
@@ -1365,4 +1323,3 @@ struct AudioLoopPlayerView: View {
         observer = nil
     }
 }
-

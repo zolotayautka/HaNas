@@ -10,7 +10,6 @@ struct AccountInfoModal: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 상단 닫기 버튼
             HStack {
                 Spacer()
                 Button(action: {
@@ -23,25 +22,18 @@ struct AccountInfoModal: View {
                 .buttonStyle(.plain)
                 .padding()
             }
-            
             VStack(spacing: 24) {
-                // 계정 아이콘
                 Image(systemName: "person.circle.fill")
                     .resizable()
                     .frame(width: 80, height: 80)
                     .foregroundColor(.blue)
-            
-            // 계정 이름
             if let username = appState.username {
                 Text(username)
                     .font(.title2)
                     .fontWeight(.semibold)
             }
-            
             Divider()
                 .padding(.horizontal)
-            
-            // 로그아웃 버튼
             Button(action: {
                 dismiss()
                 appState.logout()
@@ -58,8 +50,6 @@ struct AccountInfoModal: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal)
-            
-            // 계정삭제 버튼
             Button(action: {
                 deletePassword = ""
                 errorMessage = ""

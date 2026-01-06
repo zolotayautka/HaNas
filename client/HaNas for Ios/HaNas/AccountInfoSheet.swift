@@ -12,24 +12,17 @@ struct AccountInfoSheet: View {
         NavigationView {
             VStack(spacing: 24) {
                 Spacer()
-                
-                // 계정 아이콘
                 Image(systemName: "person.circle.fill")
                     .resizable()
                     .frame(width: 100, height: 100)
                     .foregroundColor(.blue)
-                
-                // 계정 이름
                 if let username = appState.username {
                     Text(username)
                         .font(.title2)
                         .fontWeight(.semibold)
                 }
-                
                 Spacer()
-                
                 VStack(spacing: 12) {
-                    // 로그아웃 버튼
                     Button(action: {
                         dismiss()
                         appState.logout()
@@ -45,8 +38,6 @@ struct AccountInfoSheet: View {
                         .cornerRadius(10)
                     }
                     .padding(.horizontal)
-                    
-                    // 계정삭제 버튼
                     Button(action: {
                         deletePassword = ""
                         errorMessage = ""
@@ -96,7 +87,6 @@ struct AccountInfoSheet: View {
             showingError = true
             return
         }
-        
         Task {
             do {
                 try await HaNasAPI.shared.deleteAccount(password: deletePassword)
