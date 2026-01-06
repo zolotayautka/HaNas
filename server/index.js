@@ -276,7 +276,7 @@
         iconHtml = `<span class='file-icon'>📄</span>`;
       }
       const nameHtml = isDir ? `<a href='javascript:void(0)' data-id='${c.id}' class='open'>${safe(c.name)}/</a>` : `<a href='javascript:void(0)' data-id='${c.id}' data-name='${c.name}' class='file-click'>${safe(c.name)}</a>`;
-      const sizeHtml = isDir ? '-' : (c.size ? fmtSize(c.size) : '-');
+      const sizeHtml = (c.size || c.size === 0) ? fmtSize(c.size) : '-';
       const dateHtml = c.updated_at ? new Date(c.updated_at).toLocaleString() : '-';
       const actions = [];
       if(isDir){
