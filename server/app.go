@@ -1394,6 +1394,9 @@ var favicon []byte
 //go:embed apple-touch-icon.png
 var appleTouchIcon []byte
 
+//go:embed appstore.svg
+var appstore []byte
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
@@ -1440,6 +1443,10 @@ func main() {
 	http.HandleFunc("/apple-touch-icon.png", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		w.Write(appleTouchIcon)
+	})
+	http.HandleFunc("/appstore.svg", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Write(appstore)
 	})
 	fmt.Printf("%s server started at :80\n", programName)
 	http.ListenAndServe(":80", nil)

@@ -40,11 +40,27 @@
     .progress{height:14px;background:#eee;border-radius:9px;overflow:hidden;width:220px}
     .progress .bar{height:100%;background:linear-gradient(90deg,#4caf50,#a5f18a);width:0%}
     .hidden{display:none}
+    .ios-banner{position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:1000;display:none}
+    .ios-banner.show{display:block}
+    .ios-banner-content{max-width:980px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:12px}
+    .ios-banner img{height:50px;width:auto}
+    .ios-banner-text{flex:1;font-size:14px;color:#333}
+    .ios-banner-close{background:none;border:none;font-size:24px;color:#999;cursor:pointer;padding:0;line-height:1}
+    .ios-banner-close:hover{color:#333}
+    body.has-banner{padding-top:74px}
   </style>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 </head>
 <body>
+  <div id="iosBanner" class="ios-banner">
+    <div class="ios-banner-content">
+      <a href="https://apps.apple.com/us/app/hanas/id6756316515" target="_blank" style="display:flex;align-items:center;text-decoration:none;flex:1">
+        <img src="/appstore.svg" alt="Download on App Store" />
+      </a>
+      <button id="closeBanner" class="ios-banner-close">&times;</button>
+    </div>
+  </div>
   <div id="authView" class="auth-container">
     <h2 id="authTitle">Login</h2>
     <form id="authForm" class="auth-form">

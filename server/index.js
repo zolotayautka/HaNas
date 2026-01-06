@@ -1,4 +1,21 @@
 (async function(){
+  const ua = navigator.userAgent;
+  const platform = navigator.platform || '';
+  const isDesktop = /Win|Mac|Linux/.test(platform) || /Windows|Macintosh|Linux/.test(ua);
+  const isIOSMobile = /iPad|iPhone|iPod/.test(ua) && !window.MSStream && !isDesktop;
+  const iosBanner = document.getElementById('iosBanner');
+  const closeBanner = document.getElementById('closeBanner');
+  if(isIOSMobile && !sessionStorage.getItem('iosBannerClosed')) {
+    iosBanner.classList.add('show');
+    document.body.classList.add('has-banner');
+  }
+  if(closeBanner) {
+    closeBanner.addEventListener('click', () => {
+      iosBanner.classList.remove('show');
+      document.body.classList.remove('has-banner');
+      sessionStorage.setItem('iosBannerClosed', 'true');
+    });
+  }
   const userLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
   let lang = 'en';
   if(userLang.startsWith('ja')) lang = 'ja';
