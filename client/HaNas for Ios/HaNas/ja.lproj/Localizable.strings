@@ -71,10 +71,16 @@
 "overwrite_confirm_message" = "同じ名前のファイルがすでに存在します。上書きしますか？";
 "overwrite" = "上書き";
 
-/* アカウント削除 */
-"deleteAccountConfirm" = "本当にアカウントを削除しますか？";
-"accountDeleted" = "アカウントが削除されました。";
-"deleteAccountFailed" = "アカウント削除に失敗しました。";
-"password" = "パスワード";
-"cancel" = "キャンセル";
-"delete" = "削除";
+/* 削除確認 */
+"delete_confirm_title" = "削除確認";
+"delete_multiple_confirm_title" = "選択した項目を削除";
+
+/* アカウント情報 */
+"account_info" = "アカウント情報";
+"logout_button" = "ログアウト";
+"delete_account" = "アカウント削除";
+"delete_account_confirm" = "アカウント削除の確認";
+"delete_account_warning" = "この操作は元に戻せません。続行するにはパスワードを入力してください。";
+"incorrect_password" = "パスワードが正しくありません";
+"password_required" = "パスワードを入力してください";
+"confirm" = "確認";

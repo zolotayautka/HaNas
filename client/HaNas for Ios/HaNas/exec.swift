@@ -203,7 +203,7 @@ class HaNasAPI {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw HaNasError.invalidResponse
         }
-        guard httpResponse.statusCode == 200 else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             throw HaNasError.httpError(statusCode: httpResponse.statusCode)
         }
         return data
@@ -220,7 +220,7 @@ class HaNasAPI {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw HaNasError.invalidResponse
         }
-        guard httpResponse.statusCode == 200 else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             throw HaNasError.httpError(statusCode: httpResponse.statusCode)
         }
         return data
@@ -246,7 +246,7 @@ class HaNasAPI {
         return response
     }
   
-    func uploadFileMultipart(filename: String, fileURL: URL, oyaId: Int? = nil, uploadId: String? = nil) async throws -> UploadResponse {
+    func uploadFileMultipart(filename: String, fileURL: URL, oyaId: Int? = nil, uploadId: String? = nil, progressCallback: ((Double) -> Void)? = nil) async throws -> UploadResponse {
         let endpoint = "/upload"
         guard let url = URL(string: baseURL + endpoint) else {
             throw HaNasError.invalidURL
@@ -286,11 +286,19 @@ class HaNasAPI {
         body.append("\r\n".data(using: .utf8)!)
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = body
+        
+        // SSE를 통한 서버 측 프로그레스 추적
+        if let uploadId = uploadId, let progressCallback = progressCallback {
+            Task {
+                await monitorUploadProgress(uploadId: uploadId, progressCallback: progressCallback)
+            }
+        }
+        
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw HaNasError.invalidResponse
         }
-        guard httpResponse.statusCode == 200 else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 throw HaNasError.serverError(message: errorResponse.error)
             }
@@ -298,6 +306,35 @@ class HaNasAPI {
         }
         let uploadResponse = try JSONDecoder().decode(UploadResponse.self, from: data)
         return uploadResponse
+    }
+    
+    private func monitorUploadProgress(uploadId: String, progressCallback: @escaping (Double) -> Void) async {
+        let endpoint = "/upload/progress?upload_id=\(uploadId)"
+        guard let url = URL(string: baseURL + endpoint) else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        
+        do {
+            let (bytes, _) = try await session.bytes(for: request)
+            
+            for try await line in bytes.lines {
+                if line.hasPrefix("data: ") {
+                    let dataStr = line.replacingOccurrences(of: "data: ", with: "").trimmingCharacters(in: .whitespaces)
+                    if let progress = Int(dataStr) {
+                        await MainActor.run {
+                            progressCallback(Double(progress) / 100.0)
+                        }
+                        if progress >= 100 {
+                            break
+                        }
+                    }
+                }
+            }
+        } catch {
+            // SSE 연결 실패는 무시 (업로드 자체는 계속 진행)
+        }
     }
     
     func createFolder(name: String, oyaId: Int? = nil) async throws -> UploadResponse {
@@ -426,7 +463,7 @@ class HaNasAPI {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw HaNasError.invalidResponse
         }
-        guard httpResponse.statusCode == 200 else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             throw HaNasError.httpError(statusCode: httpResponse.statusCode)
         }
         return data
@@ -509,7 +546,7 @@ class HaNasAPI {
                 }
             }
         }
-        guard httpResponse.statusCode == 200 else {
+        guard (200...299).contains(httpResponse.statusCode) else {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                 throw HaNasError.serverError(message: errorResponse.error)
             }
@@ -518,6 +555,19 @@ class HaNasAPI {
         let decoder = JSONDecoder()
         let result = try decoder.decode(T.self, from: data)
         return result
+    }
+    
+    func deleteAccount(password: String) async throws {
+        let endpoint = "/delete-account"
+        let body: [String: Any] = [
+            "password": password
+        ]
+        try await performRequestWithoutResponse(
+            endpoint: endpoint,
+            method: "POST",
+            body: body,
+            requiresAuth: true
+        )
     }
 }
 

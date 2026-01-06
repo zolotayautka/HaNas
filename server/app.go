@@ -443,6 +443,23 @@ func DeleteNode(src Node) error {
 	return nil
 }
 
+func calculateDirSize(nodeID uint, userID uint) int64 {
+	var totalSize int64
+	var children []Node
+	db.Where("oya_id = ? AND user_id = ?", nodeID, userID).Find(&children)
+	for _, child := range children {
+		if child.IsDir {
+			totalSize += calculateDirSize(child.ID, userID)
+		} else if child.Fid != nil {
+			p := fmt.Sprintf("%s/%d", dataDir, *child.Fid)
+			if st, err := os.Stat(p); err == nil {
+				totalSize += st.Size()
+			}
+		}
+	}
+	return totalSize
+}
+
 func GetJson(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromRequest(r)
 	if err != nil {
@@ -486,6 +503,8 @@ func GetJson(w http.ResponseWriter, r *http.Request) {
 		if st, err := os.Stat(p); err == nil {
 			node.Size = st.Size()
 		}
+	} else if node.IsDir {
+		node.Size = calculateDirSize(node.ID, userID)
 	}
 	var share Share
 	if err := db.First(&share, "node_id = ? AND user_id = ?", node.ID, userID).Error; err == nil {
@@ -505,6 +524,8 @@ func GetJson(w http.ResponseWriter, r *http.Request) {
 			if st, err := os.Stat(p); err == nil {
 				node.Ko[i].Size = st.Size()
 			}
+		} else if node.Ko[i].IsDir {
+			node.Ko[i].Size = calculateDirSize(node.Ko[i].ID, userID)
 		}
 		var childShare Share
 		if err := db.First(&childShare, "node_id = ? AND user_id = ?", node.Ko[i].ID, userID).Error; err == nil {
@@ -807,6 +828,16 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 	if oyaPtr == nil {
 		root := return_root(userID)
 		oyaPtr = &root.ID
+	} else {
+		var parentNode Node
+		if err := db.First(&parentNode, "id = ? AND user_id = ?", *oyaPtr, userID).Error; err != nil {
+			http.Error(w, "parent folder not found", http.StatusNotFound)
+			return
+		}
+		if !parentNode.IsDir {
+			http.Error(w, "parent is not a folder", http.StatusBadRequest)
+			return
+		}
 	}
 	nodeID, err := UploadNode(filename, data, isDir, oyaPtr, userID)
 	if err != nil {

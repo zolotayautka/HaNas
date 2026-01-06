@@ -71,7 +71,16 @@
 "overwrite_confirm_message" = "같은 이름의 파일이 이미 존재합니다. 덮어쓰시겠습니까?";
 "overwrite" = "덮어쓰기";
 
-/* 회원탈퇴 관련 */
-"deleteAccountConfirm" = "정말로 계정을 삭제하시겠습니까?";
-"accountDeleted" = "계정이 삭제되었습니다.";
-"deleteAccountFailed" = "계정 삭제에 실패했습니다.";
+/* 삭제 확인 */
+"delete_confirm_title" = "삭제 확인";
+"delete_multiple_confirm_title" = "선택한 항목 삭제";
+
+/* 계정 정보 */
+"account_info" = "계정 정보";
+"logout_button" = "로그아웃";
+"delete_account" = "계정 삭제";
+"delete_account_confirm" = "계정 삭제 확인";
+"delete_account_warning" = "이 작업은 취소할 수 없습니다. 계속하려면 비밀번호를 입력하세요.";
+"incorrect_password" = "비밀번호가 올바르지 않습니다";
+"password_required" = "비밀번호를 입력해주세요";
+"confirm" = "확인";

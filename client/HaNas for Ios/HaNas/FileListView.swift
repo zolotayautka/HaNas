@@ -26,9 +26,11 @@ struct FileListView: View {
     @State private var duplicateAlertMessage = ""
     @State private var showingOverwriteAlert = false
     @State private var overwriteAction: (() -> Void)?
-    @State private var showingDeleteAccountDialog = false
-    @State private var deleteAccountPassword = ""
-    @State private var deleteAccountError: String = ""
+    @State private var showingAccountInfo = false
+    @State private var showingDeleteConfirm = false
+    @State private var deleteNodeToConfirm: Node?
+    @State private var showingDeleteMultipleConfirm = false
+    @State private var nodesToDelete: [Node] = []
     @EnvironmentObject var appState: AppState
     @State private var isSelectionMode = false
     @State private var selectedNodes: Set<Int> = []
@@ -140,6 +142,8 @@ struct FileListView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.easeInOut, value: showingNodeInfo)
             }
+            
+            UploadProgressOverlay()
         }
         .navigationTitle(NSLocalizedString("app_name", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
@@ -176,14 +180,9 @@ struct FileListView: View {
             }
             ToolbarItemGroup(placement: .navigationBarLeading) {
                 Button(action: {
-                    appState.logout()
+                    showingAccountInfo = true
                 }) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                }
-                Button(action: {
-                    showingDeleteAccountDialog = true
-                }) {
-                    Image(systemName: "person.crop.circle.badge.xmark")
+                    Image(systemName: "person.circle")
                 }
             }
         }
@@ -238,53 +237,27 @@ struct FileListView: View {
         } message: {
             Text(NSLocalizedString("overwrite_confirm_message", comment: ""))
         }
-        .overlay(
-            Group {
-                if showingDeleteAccountDialog {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                    VStack(spacing: 16) {
-                        Text(NSLocalizedString("deleteAccountConfirm", comment: "Are you sure you want to delete your account?"))
-                            .font(.headline)
-                        SecureField(NSLocalizedString("password", comment: "Password"), text: $deleteAccountPassword)
-                            .textContentType(.password)
-                            .padding(8)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(6)
-                            .frame(width: 220)
-                        if !deleteAccountError.isEmpty {
-                            Text(deleteAccountError)
-                                .foregroundColor(.red)
-                                .font(.footnote)
-                        }
-                        HStack {
-                            Button(NSLocalizedString("cancel", comment: "Cancel")) {
-                                showingDeleteAccountDialog = false
-                                deleteAccountPassword = ""
-                                deleteAccountError = ""
-                            }
-                            Spacer()
-                            Button(NSLocalizedString("delete", comment: "Delete")) {
-                                deleteAccount()
-                            }
-                            .foregroundColor(.red)
-                        }
-                    }
-                    .padding(20)
-                    .background(Color(UIColor.systemBackground))
-                    .cornerRadius(14)
-                    .frame(width: 280)
-                    .shadow(radius: 20)
-                }
+        .sheet(isPresented: $showingAccountInfo) {
+            AccountInfoSheet()
+                .environmentObject(appState)
+                .presentationDetents([.height(400), .medium])
+                .presentationDragIndicator(.visible)
+        }
+        .alert(NSLocalizedString("delete_confirm_title", comment: "Delete this item?"), isPresented: $showingDeleteConfirm, presenting: deleteNodeToConfirm) { node in
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {
+                deleteNodeToConfirm = nil
             }
-        )
-        .onChange(of: showingDeleteAccountDialog) { newValue in
-            if newValue {
-                deleteAccountError = ""
-            } else {
-                deleteAccountPassword = ""
-                deleteAccountError = ""
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive, action: confirmDelete)
+        } message: { node in
+            Text(node.name)
+        }
+        .alert(NSLocalizedString("delete_multiple_confirm_title", comment: "Delete selected items?"), isPresented: $showingDeleteMultipleConfirm) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {
+                nodesToDelete.removeAll()
             }
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive, action: confirmDeleteMultiple)
+        } message: {
+            Text("\(nodesToDelete.count) items")
         }
         .background(
             Group {
@@ -333,6 +306,12 @@ struct FileListView: View {
         guard let currentFolder = viewModel.currentFolder, let children = currentFolder.ko else { return }
         let nodes = children.filter { selectedNodes.contains($0.id) }
         guard !nodes.isEmpty else { return }
+        nodesToDelete = nodes
+        showingDeleteMultipleConfirm = true
+    }
+    
+    private func confirmDeleteMultiple() {
+        let nodes = nodesToDelete
         Task {
             for node in nodes {
                 do {
@@ -347,6 +326,7 @@ struct FileListView: View {
                 }
                 isSelectionMode = false
                 selectedNodes.removeAll()
+                nodesToDelete.removeAll()
             }
         }
     }
@@ -435,12 +415,19 @@ struct FileListView: View {
             if duplicate != nil {
                 overwriteAction = {
                     Task {
+                        let uploadId = await MainActor.run {
+                            UploadManager.shared.addTask(filename: filename)
+                        }
                         do {
                             _ = try await HaNasAPI.shared.uploadFile(filename: filename, data: data, oyaId: folderId == -1 ? nil : folderId)
                             await MainActor.run {
+                                UploadManager.shared.completeTask(uploadId: uploadId)
                                 viewModel.loadFolder(id: folderId)
                             }
                         } catch {
+                            await MainActor.run {
+                                UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
+                            }
                         }
                     }
                 }
@@ -450,12 +437,19 @@ struct FileListView: View {
         }
         
         Task {
+            let uploadId = await MainActor.run {
+                UploadManager.shared.addTask(filename: filename)
+            }
             do {
                 _ = try await HaNasAPI.shared.uploadFile(filename: filename, data: data, oyaId: folderId == -1 ? nil : folderId)
                 await MainActor.run {
+                    UploadManager.shared.completeTask(uploadId: uploadId)
                     viewModel.loadFolder(id: folderId)
                 }
             } catch {
+                await MainActor.run {
+                    UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
+                }
             }
         }
     }
@@ -469,12 +463,29 @@ struct FileListView: View {
             if duplicate != nil {
                 overwriteAction = {
                     Task {
+                        let uploadId = await MainActor.run {
+                            UploadManager.shared.addTask(filename: filename)
+                        }
                         do {
-                            _ = try await HaNasAPI.shared.uploadFileMultipart(filename: filename, fileURL: url, oyaId: folderId == -1 ? nil : folderId)
+                            _ = try await HaNasAPI.shared.uploadFileMultipart(
+                                filename: filename,
+                                fileURL: url,
+                                oyaId: folderId == -1 ? nil : folderId,
+                                uploadId: uploadId,
+                                progressCallback: { progress in
+                                    Task { @MainActor in
+                                        UploadManager.shared.updateProgress(uploadId: uploadId, progress: progress)
+                                    }
+                                }
+                            )
                             await MainActor.run {
+                                UploadManager.shared.completeTask(uploadId: uploadId)
                                 viewModel.loadFolder(id: folderId)
                             }
                         } catch {
+                            await MainActor.run {
+                                UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
+                            }
                         }
                     }
                 }
@@ -484,12 +495,29 @@ struct FileListView: View {
         }
         
         Task {
+            let uploadId = await MainActor.run {
+                UploadManager.shared.addTask(filename: filename)
+            }
             do {
-                _ = try await HaNasAPI.shared.uploadFileMultipart(filename: filename, fileURL: url, oyaId: folderId == -1 ? nil : folderId)
+                _ = try await HaNasAPI.shared.uploadFileMultipart(
+                    filename: filename,
+                    fileURL: url,
+                    oyaId: folderId == -1 ? nil : folderId,
+                    uploadId: uploadId,
+                    progressCallback: { progress in
+                        Task { @MainActor in
+                            UploadManager.shared.updateProgress(uploadId: uploadId, progress: progress)
+                        }
+                    }
+                )
                 await MainActor.run {
+                    UploadManager.shared.completeTask(uploadId: uploadId)
                     viewModel.loadFolder(id: folderId)
                 }
             } catch {
+                await MainActor.run {
+                    UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
+                }
             }
         }
     }
@@ -509,13 +537,23 @@ struct FileListView: View {
     }
     
     private func deleteItem(_ node: Node) {
+        deleteNodeToConfirm = node
+        showingDeleteConfirm = true
+    }
+    
+    private func confirmDelete() {
+        guard let node = deleteNodeToConfirm else { return }
         Task {
             do {
                 try await HaNasAPI.shared.deleteNode(id: node.id)
                 await MainActor.run {
                     viewModel.loadFolder(id: viewModel.currentFolderId ?? -1)
+                    deleteNodeToConfirm = nil
                 }
             } catch {
+                await MainActor.run {
+                    deleteNodeToConfirm = nil
+                }
             }
         }
     }
@@ -670,33 +708,6 @@ struct FileListView: View {
         }
     }
     
-    private func deleteAccount() {
-        guard let serverURL = appState.serverURL, !deleteAccountPassword.isEmpty else { return }
-        let urlString = serverURL + (serverURL.hasSuffix("/") ? "delete-account" : "/delete-account")
-        guard let url = URL(string: urlString) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body = ["password": deleteAccountPassword]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                if let httpResponse = response as? HTTPURLResponse {
-                    if httpResponse.statusCode == 200 {
-                        showingDeleteAccountDialog = false
-                        deleteAccountPassword = ""
-                        deleteAccountError = ""
-                        appState.logout()
-                    } else if httpResponse.statusCode == 401 {
-                        deleteAccountError = NSLocalizedString("incorrectPassword", comment: "Incorrect password.")
-                    } else {
-                        deleteAccountError = NSLocalizedString("deleteAccountFailed", comment: "Failed to delete account.")
-                    }
-                }
-            }
-        }.resume()
-    }
-
     private func showIncorrectPasswordAlert() {
         let alert = UIAlertController(title: nil, message: NSLocalizedString("incorrectPassword", comment: "Incorrect password."), preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: NSLocalizedString("ok", comment: "OK"), style: .default))

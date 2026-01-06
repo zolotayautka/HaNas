@@ -71,10 +71,16 @@
 "overwrite_confirm_message" = "A file with the same name already exists. Do you want to overwrite it?";
 "overwrite" = "Overwrite";
 
-/* Account Deletion */
-"deleteAccountConfirm" = "Are you sure you want to delete your account?";
-"accountDeleted" = "Account deleted.";
-"deleteAccountFailed" = "Failed to delete account.";
-"password" = "Password";
-"cancel" = "Cancel";
-"delete" = "Delete";
+/* Delete Confirmation */
+"delete_confirm_title" = "Confirm Delete";
+"delete_multiple_confirm_title" = "Delete Selected Items";
+
+/* Account Info */
+"account_info" = "Account Info";
+"logout_button" = "Logout";
+"delete_account" = "Delete Account";
+"delete_account_confirm" = "Confirm Account Deletion";
+"delete_account_warning" = "This action cannot be undone. Please enter your password to confirm.";
+"incorrect_password" = "Incorrect password";
+"password_required" = "Password is required";
+"confirm" = "Confirm";

@@ -8,6 +8,7 @@ struct FileListView: View {
     @StateObject private var viewModel = FileListViewModel()
     @State private var selectedFolderID: Int?
     @State private var selectedFile: Node?
+    @State private var showingAccountInfo = false
     
     var body: some View {
         NavigationSplitView(columnVisibility: .constant(.all)) {
@@ -39,9 +40,9 @@ struct FileListView: View {
                 }
                 ToolbarItem(placement: .automatic) {
                     Button(action: {
-                        AppState.shared.logout()
+                        showingAccountInfo = true
                     }) {
-                        Label(NSLocalizedString("logout_button", comment: ""), systemImage: "rectangle.portrait.and.arrow.right")
+                        Label(NSLocalizedString("account_info", comment: "Account Info"), systemImage: "person.circle")
                     }
                 }
             }
@@ -62,6 +63,13 @@ struct FileListView: View {
                     }
                 )
             }
+        }
+        .overlay(
+            UploadProgressOverlay()
+        )
+        .sheet(isPresented: $showingAccountInfo) {
+            AccountInfoModal()
+                .environmentObject(AppState.shared)
         }
         .onAppear {
             viewModel.loadRootFolder()
@@ -98,6 +106,10 @@ struct FolderContentView: View {
     @State private var overwriteAction: (() -> Void)?
     @State private var selectedFiles: Set<Node> = []
     @State private var selectionMode: Bool = false
+    @State private var showingDeleteConfirm = false
+    @State private var deleteNodeToConfirm: Node?
+    @State private var showingDeleteMultipleConfirm = false
+    @State private var filesToDelete: Set<Node> = []
     
     var body: some View {
         VStack(spacing: 0) {
@@ -227,6 +239,9 @@ struct FolderContentView: View {
                     }
                     .padding()
                 }
+                .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+                    handleDrop(providers: providers)
+                }
             } else if currentFolder != nil {
                 VStack {
                     Image(systemName: "folder")
@@ -240,6 +255,9 @@ struct FolderContentView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            handleDrop(providers: providers)
         }
         .alert(NSLocalizedString("new_folder_title", comment: ""), isPresented: $showingNewFolderAlert) {
             TextField(NSLocalizedString("new_folder_placeholder", comment: ""), text: $newFolderName)
@@ -273,6 +291,22 @@ struct FolderContentView: View {
             }
         } message: {
             Text(NSLocalizedString("overwrite_confirm_message", comment: ""))
+        }
+        .alert(NSLocalizedString("delete_confirm_title", comment: "Delete this item?"), isPresented: $showingDeleteConfirm, presenting: deleteNodeToConfirm) { node in
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {
+                deleteNodeToConfirm = nil
+            }
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive, action: confirmDelete)
+        } message: { node in
+            Text(node.name)
+        }
+        .alert(NSLocalizedString("delete_multiple_confirm_title", comment: "Delete selected items?"), isPresented: $showingDeleteMultipleConfirm) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {
+                filesToDelete.removeAll()
+            }
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive, action: confirmDeleteMultiple)
+        } message: {
+            Text("\(filesToDelete.count) items")
         }
     }
 
@@ -354,55 +388,194 @@ struct FolderContentView: View {
         guard let parentId = selectedFolderID else { return }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
         panel.canChooseFiles = true
 
         panel.begin { response in
             guard response == .OK else { return }
-            Task {
-                // Check for duplicate names first
-                let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
-                let existingNames = currentFolder?.ko?.map { $0.name } ?? []
-                
-                var filesToUpload: [(URL, Bool)] = []
-                for url in panel.urls {
-                    let filename = url.lastPathComponent
-                    let isDuplicate = existingNames.contains(filename)
-                    filesToUpload.append((url, isDuplicate))
-                }
-                
-                var uploadCount = 0
-                for (url, isDuplicate) in filesToUpload {
-                    if isDuplicate {
-                        let shouldOverwrite = await MainActor.run {
-                            let alert = NSAlert()
-                            alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
-                            alert.informativeText = String(format: NSLocalizedString("file_exists_overwrite", comment: ""), url.lastPathComponent)
-                            alert.addButton(withTitle: NSLocalizedString("overwrite", comment: ""))
-                            alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
-                            alert.alertStyle = .warning
-                            return alert.runModal() == .alertFirstButtonReturn
-                        }
-                        if !shouldOverwrite {
-                            continue
-                        }
-                    }
-                    
+            uploadFiles(urls: panel.urls, parentId: parentId)
+        }
+    }
+    
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let parentId = selectedFolderID else { return false }
+        
+        Task {
+            var fileURLs: [URL] = []
+            
+            for provider in providers {
+                if provider.hasItemConformingToTypeIdentifier("public.file-url") {
                     do {
-                        guard let data = try? Data(contentsOf: url) else {
-                            continue
+                        let data = try await provider.loadItem(forTypeIdentifier: "public.file-url", options: nil)
+                        if let url = data as? URL {
+                            fileURLs.append(url)
+                        } else if let urlData = data as? Data, let urlString = String(data: urlData, encoding: .utf8) {
+                            if let url = URL(string: urlString) {
+                                fileURLs.append(url)
+                            }
                         }
-                        try await HaNasAPI.shared.uploadFile(filename: url.lastPathComponent, data: data, oyaId: parentId)
-                        uploadCount += 1
                     } catch {
+                        // 실패한 항목은 무시
                     }
                 }
-                if uploadCount > 0 {
-                    await MainActor.run {
-                        viewModel.loadFolder(id: parentId, forceRefresh: true)
-                        viewModel.refreshTree()
+            }
+            
+            if !fileURLs.isEmpty {
+                await MainActor.run {
+                    uploadFiles(urls: fileURLs, parentId: parentId)
+                }
+            }
+        }
+        
+        return true
+    }
+    
+    private func uploadFiles(urls: [URL], parentId: Int) {
+        Task {
+            for url in urls {
+                var isDirectory: ObjCBool = false
+                FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+                
+                if isDirectory.boolValue {
+                    await uploadDirectory(url: url, parentId: parentId)
+                } else {
+                    await uploadSingleFile(url: url, parentId: parentId)
+                }
+            }
+            
+            // 모든 업로드 완료 후 새로고침
+            await MainActor.run {
+                viewModel.loadFolder(id: parentId, forceRefresh: true)
+                viewModel.refreshTree()
+            }
+        }
+    }
+    
+    private func uploadDirectory(url: URL, parentId: Int) async {
+        let folderName = url.lastPathComponent
+        
+        // 중복 확인
+        let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
+        let existingNames = currentFolder?.ko?.map { $0.name } ?? []
+        let isDuplicate = existingNames.contains(folderName)
+        
+        if isDuplicate {
+            let shouldOverwrite = await MainActor.run {
+                let alert = NSAlert()
+                alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
+                alert.informativeText = String(format: NSLocalizedString("folder_exists_overwrite", comment: "A folder named '%@' already exists. Continue?"), folderName)
+                alert.addButton(withTitle: NSLocalizedString("continue", comment: "Continue"))
+                alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+                alert.alertStyle = .warning
+                return alert.runModal() == .alertFirstButtonReturn
+            }
+            if !shouldOverwrite {
+                return
+            }
+        }
+        
+        // 폴더 생성
+        do {
+            let response = try await HaNasAPI.shared.createFolder(name: folderName, oyaId: parentId)
+            guard let newFolderId = response.nodeId else { return }
+            
+            // 폴더 내부 파일 및 하위 폴더 업로드
+            let fileManager = FileManager.default
+            if let enumerator = fileManager.enumerator(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) {
+                var directoriesToCreate: [(URL, Int)] = []
+                var filesToUpload: [(URL, Int)] = []
+                
+                // 먼저 모든 항목을 수집
+                for case let fileURL as URL in enumerator {
+                    let resourceValues = try? fileURL.resourceValues(forKeys: [.isDirectoryKey])
+                    let isDir = resourceValues?.isDirectory ?? false
+                    let relativePath = fileURL.path.replacingOccurrences(of: url.path + "/", with: "")
+                    
+                    if isDir {
+                        directoriesToCreate.append((fileURL, newFolderId))
+                    } else {
+                        filesToUpload.append((fileURL, newFolderId))
                     }
                 }
+                
+                // 폴더 구조를 먼저 생성
+                var folderMap: [String: Int] = [url.path: newFolderId]
+                for (dirURL, _) in directoriesToCreate {
+                    let parentPath = dirURL.deletingLastPathComponent().path
+                    if let parentFolderId = folderMap[parentPath] {
+                        do {
+                            let response = try await HaNasAPI.shared.createFolder(name: dirURL.lastPathComponent, oyaId: parentFolderId)
+                            if let createdId = response.nodeId {
+                                folderMap[dirURL.path] = createdId
+                            }
+                        } catch {
+                            // 폴더 생성 실패 시 계속 진행
+                        }
+                    }
+                }
+                
+                // 파일 업로드
+                for (fileURL, _) in filesToUpload {
+                    let parentPath = fileURL.deletingLastPathComponent().path
+                    if let targetParentId = folderMap[parentPath] {
+                        await uploadSingleFile(url: fileURL, parentId: targetParentId)
+                    }
+                }
+            }
+        } catch {
+            await MainActor.run {
+                let uploadId = UploadManager.shared.addTask(filename: folderName)
+                UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
+            }
+        }
+    }
+    
+    private func uploadSingleFile(url: URL, parentId: Int) async {
+        let filename = url.lastPathComponent
+        
+        // 중복 확인
+        let currentFolder = await MainActor.run { viewModel.getCurrentFolder(id: selectedFolderID) }
+        let existingNames = currentFolder?.ko?.map { $0.name } ?? []
+        let isDuplicate = existingNames.contains(filename)
+        
+        if isDuplicate {
+            let shouldOverwrite = await MainActor.run {
+                let alert = NSAlert()
+                alert.messageText = NSLocalizedString("overwrite_confirm_title", comment: "")
+                alert.informativeText = String(format: NSLocalizedString("file_exists_overwrite", comment: ""), filename)
+                alert.addButton(withTitle: NSLocalizedString("overwrite", comment: ""))
+                alert.addButton(withTitle: NSLocalizedString("cancel", comment: ""))
+                alert.alertStyle = .warning
+                return alert.runModal() == .alertFirstButtonReturn
+            }
+            if !shouldOverwrite {
+                return
+            }
+        }
+        
+        // 프로그레스 토스트 시작
+        let uploadId = await MainActor.run {
+            UploadManager.shared.addTask(filename: filename)
+        }
+        
+        do {
+            try await HaNasAPI.shared.uploadFileMultipart(
+                filename: filename,
+                fileURL: url,
+                oyaId: parentId,
+                uploadId: uploadId,
+                progressCallback: { progress in
+                    Task { @MainActor in
+                        UploadManager.shared.updateProgress(uploadId: uploadId, progress: progress)
+                    }
+                }
+            )
+            await MainActor.run {
+                UploadManager.shared.completeTask(uploadId: uploadId)
+            }
+        } catch {
+            await MainActor.run {
+                UploadManager.shared.failTask(uploadId: uploadId, error: error.localizedDescription)
             }
         }
     }
@@ -427,9 +600,14 @@ struct FolderContentView: View {
     
     private func deleteSelectedFiles() {
         guard !selectedFiles.isEmpty else { return }
-        let filesToDelete = selectedFiles
+        filesToDelete = selectedFiles
+        showingDeleteMultipleConfirm = true
+    }
+    
+    private func confirmDeleteMultiple() {
+        let files = filesToDelete
         Task {
-            for file in filesToDelete {
+            for file in files {
                 do {
                     try await HaNasAPI.shared.deleteNode(id: file.id)
                 } catch {
@@ -443,6 +621,7 @@ struct FolderContentView: View {
                 }
                 selectionMode = false
                 selectedFiles.removeAll()
+                filesToDelete.removeAll()
             }
         }
     }
@@ -539,6 +718,12 @@ struct FolderContentView: View {
     }
     
     private func deleteItem(_ node: Node) {
+        deleteNodeToConfirm = node
+        showingDeleteConfirm = true
+    }
+    
+    private func confirmDelete() {
+        guard let node = deleteNodeToConfirm else { return }
         Task {
             do {
                 try await HaNasAPI.shared.deleteNode(id: node.id)
@@ -549,8 +734,12 @@ struct FolderContentView: View {
                         viewModel.loadFolder(id: selectedId, forceRefresh: true)
                     }
                     viewModel.refreshTree()
+                    deleteNodeToConfirm = nil
                 }
             } catch {
+                await MainActor.run {
+                    deleteNodeToConfirm = nil
+                }
             }
         }
     }
@@ -688,7 +877,7 @@ struct FileGridItemView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(width: 100)
-            if !node.isDir, let size = node.size {
+            if let size = node.size {
                 Text(formatFileSize(size))
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -1176,3 +1365,4 @@ struct AudioLoopPlayerView: View {
         observer = nil
     }
 }
+

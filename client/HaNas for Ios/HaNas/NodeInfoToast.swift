@@ -11,7 +11,7 @@ struct NodeInfoToast: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(node.name)
                     .font(.headline)
-                if let size = node.size, !node.isDir {
+                if let size = node.size {
                     Text("\(formatSize(size))")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
