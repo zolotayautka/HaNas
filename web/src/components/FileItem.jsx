@@ -24,7 +24,13 @@ function FileItem({ node, isSelected, isSelectionMode, onClick, onDelete, onRena
     try {
       const response = await api.createShareLink(node.id)
       const shareUrl = api.getShareUrl(response.token)
-      await navigator.clipboard.writeText(shareUrl)
+      let clipboardSuccess = false
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        clipboardSuccess = true
+      } catch (e) {
+        window.prompt(t('share_link_copied'), shareUrl)
+      }
       alert(t('share_link_copied'))
       if (onRefresh) onRefresh()
     } catch (err) {
