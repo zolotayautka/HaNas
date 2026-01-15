@@ -74,8 +74,10 @@ function FileItem({ node, isSelected, isSelectionMode, onClick, onDelete, onRena
   const handlePreview = () => {
     if (isMediaFile()) {
       setShowMediaPlayer(true)
+      setShowMenu(false)
     } else if (isDocumentFile()) {
       setShowDocumentViewer(true)
+      setShowMenu(false)
     } else {
       handleDownload()
     }
@@ -210,12 +212,14 @@ function FileItem({ node, isSelected, isSelectionMode, onClick, onDelete, onRena
           <div className="context-menu" onClick={(e) => e.stopPropagation()}>
             {!node.is_dir && (
               <>
-                <button className="menu-item" onClick={handlePreview}>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                  </svg>
-                  {isMediaFile() ? t('play') : t('view')}
-                </button>
+                {(isMediaFile() || isDocumentFile()) ? (
+                  <button className="menu-item" onClick={handlePreview}>
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                    </svg>
+                    {isMediaFile() ? t('play') : t('view')}
+                  </button>
+                ) : null}
                 <button className="menu-item" onClick={handleDownload}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
