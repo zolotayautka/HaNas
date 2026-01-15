@@ -1087,10 +1087,10 @@ var indexHtmlContent string
 //go:embed config.js
 var configJs string
 
-//go:embed assets/index-B9LPytqG.js
+//go:embed assets/index.js
 var js_script string
 
-//go:embed assets/index-B9jjjlvn.css
+//go:embed assets/index.css
 var css_style string
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -1428,11 +1428,11 @@ func main() {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(indexHtmlContent))
 	})
-	http.HandleFunc("/assets/index-B9LPytqG.js", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/index.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Write([]byte(js_script))
 	})
-	http.HandleFunc("/assets/index-B9jjjlvn.css", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/index.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css")
 		w.Write([]byte(css_style))
 	})
