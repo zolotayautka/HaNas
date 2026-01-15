@@ -1,2 +1,3 @@
-server/i18n.js linguist-generated
-client/*/*/* linguist-generated
+server/*.js linguist-generated
+server/*/*.js linguist-generated
+
