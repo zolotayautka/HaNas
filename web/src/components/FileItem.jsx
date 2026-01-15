@@ -28,10 +28,10 @@ function FileItem({ node, isSelected, isSelectionMode, onClick, onDelete, onRena
       try {
         await navigator.clipboard.writeText(shareUrl)
         clipboardSuccess = true
+        alert(t('share_link_copied'))
       } catch (e) {
         window.prompt(t('share_link_copied'), shareUrl)
       }
-      alert(t('share_link_copied'))
       if (onRefresh) onRefresh()
     } catch (err) {
       alert(t('share_link_failed'))
