@@ -38,6 +38,7 @@
 "empty_folder" = "This folder is empty";
 
 /* Context Menu */
+"info" = "Info";
 "preview" = "Preview";
 "copy" = "Copy";
 "cut" = "Cut";

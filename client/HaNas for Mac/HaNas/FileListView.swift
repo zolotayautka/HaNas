@@ -110,6 +110,7 @@ struct FolderContentView: View {
     @State private var deleteNodeToConfirm: Node?
     @State private var showingDeleteMultipleConfirm = false
     @State private var filesToDelete: Set<Node> = []
+    @State private var showingNodeInfo: Node? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -191,6 +192,10 @@ struct FolderContentView: View {
                                     }
                                 }
                                 .contextMenu {
+                                    Button(NSLocalizedString("info", comment: "정보")) {
+                                        showingNodeInfo = child
+                                    }
+                                    Divider()
                                     if !child.isDir {
                                         Button(NSLocalizedString("preview", comment: "")) {
                                             openPreview(child)
@@ -308,6 +313,29 @@ struct FolderContentView: View {
         } message: {
             Text("\(filesToDelete.count) items")
         }
+        .overlay(
+            Group {
+                if let node = showingNodeInfo {
+                    VStack {
+                        Spacer()
+                        NodeInfoToast(node: node)
+                            .padding()
+                            .onTapGesture {
+                                showingNodeInfo = nil
+                            }
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.spring(), value: showingNodeInfo)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            if showingNodeInfo?.id == node.id {
+                                showingNodeInfo = nil
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     private var supportsCopyAPI: Bool {
@@ -840,11 +868,6 @@ struct FileGridItemView: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(width: 100)
-            if let size = node.size {
-                Text(formatFileSize(size))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
         }
         .frame(width: 120)
         .onAppear {
@@ -913,11 +936,6 @@ struct FileGridItemView: View {
         }
     }
     
-    private func formatFileSize(_ bytes: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
-    }
 }
 
 struct MediaPreviewView: View {
