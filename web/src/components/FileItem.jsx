@@ -74,10 +74,8 @@ function FileItem({ node, isSelected, isSelectionMode, onClick, onDelete, onRena
   const handlePreview = () => {
     if (isMediaFile()) {
       setShowMediaPlayer(true)
-      setShowMenu(false)
     } else if (isDocumentFile()) {
       setShowDocumentViewer(true)
-      setShowMenu(false)
     } else {
       handleDownload()
     }
