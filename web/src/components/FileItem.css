@@ -1,0 +1,238 @@
+.file-item {
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.file-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.file-item.selected {
+  background: #e3f2fd;
+  border: 2px solid #007aff;
+}
+.file-item.folder .file-icon {
+  color: #007aff;
+}
+.file-item.file .file-icon {
+  color: #86868b;
+}
+.selection-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: #007aff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.selection-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+.file-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 8px;
+}
+.file-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.file-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.file-thumbnail-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.file-thumbnail-fallback svg {
+  width: 100%;
+  height: 100%;
+}
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  word-break: break-word;
+  line-height: 1.3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.file-size {
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 4px;
+}
+.file-menu-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #1d1d1f;
+}
+.file-menu-button svg {
+  width: 18px;
+  height: 18px;
+}
+.file-item:hover .file-menu-button {
+  display: flex;
+}
+.file-menu-button:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+}
+.context-menu {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 2001;
+}
+.menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1d1d1f;
+  border-radius: 8px;
+  transition: background 0.2s;
+  text-align: left;
+}
+.menu-item svg {
+  width: 20px;
+  height: 20px;
+}
+.menu-item:hover {
+  background: #f5f5f7;
+}
+.menu-item.danger {
+  color: #ff3b30;
+}
+.menu-item.danger:hover {
+  background: #fff1f0;
+}
+.rename-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  min-width: 300px;
+  max-width: 90vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 2001;
+}
+.rename-modal h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1d1d1f;
+}
+.rename-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 1px solid #d2d2d7;
+  border-radius: 10px;
+  background: #f5f5f7;
+  margin-bottom: 16px;
+  outline: none;
+}
+.rename-input:focus {
+  background: white;
+  border-color: #007aff;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+.rename-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.rename-actions button {
+  padding: 8px 20px;
+  border: none;
+  background: #f5f5f7;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.rename-actions button:hover {
+  background: #e5e5e7;
+}
+.rename-actions button.primary {
+  background: #007aff;
+  color: white;
+}
+.rename-actions button.primary:hover {
+  background: #0051d5;
+}
+@media (max-width: 480px) {
+  .file-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .file-name {
+    font-size: 12px;
+  }
+
+  .file-size {
+    font-size: 10px;
+  }
+}

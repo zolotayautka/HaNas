@@ -1,0 +1,118 @@
+.node-info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+.node-info-modal {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+.node-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e5e7;
+}
+.node-info-header h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+.node-info-content {
+  padding: 24px;
+}
+.node-info-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  color: #007aff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f7;
+  border-radius: 16px;
+}
+.node-info-icon svg {
+  width: 48px;
+  height: 48px;
+}
+.node-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.info-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #86868b;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+.info-value {
+  font-size: 15px;
+  color: #1d1d1f;
+  text-align: right;
+  word-break: break-word;
+  flex: 1;
+}
+.node-info-actions {
+  padding: 20px 24px;
+  border-top: 1px solid #e5e5e7;
+  display: flex;
+  justify-content: flex-end;
+}
+.modal-button {
+  padding: 10px 24px;
+  border: none;
+  background: #f5f5f7;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.modal-button:hover {
+  background: #e5e5e7;
+}
+.modal-button.primary {
+  background: #007aff;
+  color: white;
+}
+.modal-button.primary:hover {
+  background: #0051d5;
+}
+@media (max-width: 480px) {
+  .node-info-modal {
+    max-width: 100%;
+  }
+  .info-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .info-label {
+    min-width: auto;
+  }
+  .info-value {
+    text-align: left;
+  }
+}
