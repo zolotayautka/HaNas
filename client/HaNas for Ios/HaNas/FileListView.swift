@@ -1616,22 +1616,10 @@ final class AudioPlaybackManager {
             info[MPMediaItemPropertyPlaybackDuration] = duration
         }
         if #available(iOS 13.0, *) {
-            let size = CGSize(width: 512, height: 512)
-            let renderer = UIGraphicsImageRenderer(size: size)
-            let img = renderer.image { ctx in
-                UIColor.systemBlue.setFill()
-                ctx.fill(CGRect(origin: .zero, size: size))
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 80),
-                    .foregroundColor: UIColor.white
-                ]
-                let text = "HaNas"
-                let textSize = (text as NSString).size(withAttributes: attrs)
-                let rect = CGRect(x: (size.width - textSize.width)/2, y: (size.height - textSize.height)/2, width: textSize.width, height: textSize.height)
-                (text as NSString).draw(in: rect, withAttributes: attrs)
+            if let appIcon = UIImage.appIcon {
+                let artwork = MPMediaItemArtwork(boundsSize: appIcon.size) { _ in appIcon }
+                info[MPMediaItemPropertyArtwork] = artwork
             }
-            let artwork = MPMediaItemArtwork(boundsSize: img.size) { _ in img }
-            info[MPMediaItemPropertyArtwork] = artwork
         }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
@@ -1644,5 +1632,18 @@ final class AudioPlaybackManager {
     private func currentRate() -> Float {
         guard let p = player else { return 0 }
         return p.rate
+    }
+}
+
+extension UIImage {
+    static var appIcon: UIImage? {
+        guard let iconsDictionary = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+              let primaryIconsDictionary = iconsDictionary["CFBundlePrimaryIcon"] as? [String: Any],
+              let iconFiles = primaryIconsDictionary["CFBundleIconFiles"] as? [String],
+              let lastIcon = iconFiles.last,
+              let icon = UIImage(named: lastIcon) else {
+            return nil
+        }
+        return icon
     }
 }
