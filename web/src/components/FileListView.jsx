@@ -413,6 +413,8 @@ function FileListView() {
         ref={fileInputRef}
         type="file"
         multiple
+        webkitdirectory=""
+        directory=""
         style={{ display: 'none' }}
         onChange={(e) => {
           if (e.target.files) {
