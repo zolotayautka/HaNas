@@ -90,7 +90,7 @@ function FileListView() {
     }
   }
   const handleDelete = async (nodeId) => {
-    if (!confirm('Are you sure you want to delete this item?')) return   
+    if (!confirm(t('delete_confirm'))) return   
     try {
       await api.deleteNode(nodeId)
       loadFolder(currentFolder.id)
@@ -99,7 +99,7 @@ function FileListView() {
     }
   }
   const handleDeleteSelected = async () => {
-    if (!confirm(`Delete ${selectedNodes.size} selected items?`)) return
+    if (!confirm(t('delete_multiple_confirm', { count: selectedNodes.size }))) return
     try {
       for (const nodeId of selectedNodes) {
         await api.deleteNode(nodeId)
