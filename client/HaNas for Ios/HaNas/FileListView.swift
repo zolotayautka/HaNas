@@ -185,13 +185,17 @@ struct FileListView: View {
             }
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(onImagePicked: { data, filename in
-                uploadFile(data: data, filename: filename)
+            ImagePicker(onImagePicked: { items in
+                for (data, filename) in items {
+                    uploadFile(data: data, filename: filename)
+                }
             })
         }
         .sheet(isPresented: $showingDocumentPicker) {
-            DocumentPicker { url in
-                uploadDocument(url: url)
+            DocumentPicker { urls in
+                for url in urls {
+                    uploadDocument(url: url)
+                }
             }
         }
         .sheet(item: $selectedFile) { file in
@@ -1129,13 +1133,13 @@ struct VideoPlayerView: UIViewControllerRepresentable {
 }
 
 struct ImagePicker: UIViewControllerRepresentable {
-    let onImagePicked: (Data, String) -> Void
+    let onImagePicked: ([(Data, String)]) -> Void
     @Environment(\.dismiss) var dismiss
     
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images
-        config.selectionLimit = 1
+        config.selectionLimit = 0
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = context.coordinator
         return picker
@@ -1156,13 +1160,25 @@ struct ImagePicker: UIViewControllerRepresentable {
         
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             parent.dismiss()
-            guard let provider = results.first?.itemProvider else { return }
-            if provider.canLoadObject(ofClass: UIImage.self) {
-                provider.loadObject(ofClass: UIImage.self) { image, _ in
-                    if let image = image as? UIImage, let data = image.jpegData(compressionQuality: 0.8) {
-                        let filename = "photo_\(Date().timeIntervalSince1970).jpg"
-                        self.parent.onImagePicked(data, filename)
+            guard !results.isEmpty else { return }
+            var pickedImages: [(Data, String)] = []
+            let group = DispatchGroup()
+            for (idx, result) in results.enumerated() {
+                let provider = result.itemProvider
+                if provider.canLoadObject(ofClass: UIImage.self) {
+                    group.enter()
+                    provider.loadObject(ofClass: UIImage.self) { image, _ in
+                        if let image = image as? UIImage, let data = image.jpegData(compressionQuality: 0.8) {
+                            let filename = "photo_\(Date().timeIntervalSince1970)_\(idx).jpg"
+                            pickedImages.append((data, filename))
+                        }
+                        group.leave()
                     }
+                }
+            }
+            group.notify(queue: .main) {
+                if !pickedImages.isEmpty {
+                    self.parent.onImagePicked(pickedImages)
                 }
             }
         }
@@ -1201,11 +1217,12 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 
 struct DocumentPicker: UIViewControllerRepresentable {
-    let onDocumentPicked: (URL) -> Void
+    let onDocumentPicked: ([URL]) -> Void
     @Environment(\.dismiss) var dismiss
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.item])
+        picker.allowsMultipleSelection = true
         picker.delegate = context.coordinator
         return picker
     }
@@ -1225,8 +1242,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             parent.dismiss()
-            if let url = urls.first {
-                parent.onDocumentPicked(url)
+            if !urls.isEmpty {
+                parent.onDocumentPicked(urls)
             }
         }
     }
