@@ -296,6 +296,17 @@ const audio = ['mp3','m4a','wav','ogg','flac','aac','your-format'];
 const video = ['mp4','webm','ogg','mov','mkv','your-format'];
 ```
 
+## 🖼️ Material Design Icons Attribution (English)
+
+This project uses Material Design Icons SVG path data for UI icons.
+- **Copyright**: Copyright © Google LLC
+- **License**: Apache License 2.0
+- **Usage**: UI icons (SVG path data)
+- **Source**: https://github.com/google/material-design-icons
+
+The full text of the Apache License 2.0 is available at:
+http://www.apache.org/licenses/LICENSE-2.0
+
 ### Adding New API Endpoints
 
 1. Define handler function in `server/app.go`

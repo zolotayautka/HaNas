@@ -289,6 +289,17 @@ const audio = ['mp3','m4a','wav','ogg','flac','aac','your-format'];
 const video = ['mp4','webm','ogg','mov','mkv','your-format'];
 ```
 
+## 🖼️ Material Design Icons 사용 명시 (Korean)
+
+이 프로젝트는 UI 아이콘으로 Material Design Icons의 SVG path 데이터를 사용합니다.
+- **저작권**: Copyright © Google LLC
+- **라이선스**: Apache License 2.0
+- **사용**: UI 아이콘 (SVG path 데이터)
+- **출처**: https://github.com/google/material-design-icons
+
+Apache License 2.0의 전문은 다음 링크에서 확인할 수 있습니다:
+http://www.apache.org/licenses/LICENSE-2.0
+
 ## 🐛 문제 해결
 
 ### 서버 문제

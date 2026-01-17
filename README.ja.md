@@ -294,6 +294,18 @@ const audio = ['mp3','m4a','wav','ogg','flac','aac','your-format'];
 const video = ['mp4','webm','ogg','mov','mkv','your-format'];
 ```
 
+## 🖼️ Material Design Icons 利用明記 (Japanese)
+
+本プロジェクトはUIアイコンとしてMaterial Design IconsのSVGパスデータを利用しています。
+- **著作権**: Copyright © Google LLC
+- **ライセンス**: Apache License 2.0
+- **用途**: UIアイコン (SVGパスデータ)
+- **出典**: https://github.com/google/material-design-icons
+
+Apache License 2.0の全文は以下のリンクでご確認いただけます：
+http://www.apache.org/licenses/LICENSE-2.0
+
+
 ## 🐛 トラブルシューティング
 
 ### サーバーの問題
