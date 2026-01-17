@@ -52,7 +52,7 @@ go build -o hanas
 
 2. Open your browser and navigate to:
 ```
-http://localhost:8080
+http://localhost:80
 ```
 
 3. Register a new account and start managing your files!
@@ -85,7 +85,7 @@ http://localhost:8080
 ## ⚙️ Configuration
 
 ### Server Configuration
-- **Port**: Default is `8080` (modify in `main()` function)
+- **Port**: Default is `80` (modify in `main()` function)
 - **Data Directory**: `./data` (file storage location)
 - **Thumbnails Directory**: `./thumbnails` (thumbnail cache)
 - **Database**: `./database.db` (SQLite database)
@@ -129,33 +129,31 @@ For detailed API documentation, see [API_README.md](./API_README.md)
 
 ```
 HaNas/
-├── server/              # Backend server
-│   ├── app.go          # Main server logic with all API endpoints
-│   ├── go.mod          # Go module dependencies
-│   ├── index.html      # Web interface
-│   ├── index.js        # Frontend logic
-│   └── i18n.js         # Internationalization
-├── client/             # Native client applications
-│   ├── hanas for ios/  # iOS native client
-│   │   └── hanas for ios/
-│   │       ├── HaNas_iOSApp.swift      # App entry point
-│   │       ├── AppState.swift          # Global app state
-│   │       ├── ConfigManager.swift     # Configuration storage
-│   │       ├── ContentView.swift       # Main view
-│   │       ├── LoginView.swift         # Authentication UI
-│   │       ├── FileListView.swift      # File browser
-│   │       └── exec.swift              # API client
-│   └── HaNas for Mac/  # macOS native client
-│       └── HaNas for Mac/
-│           ├── HaNas_for_MacApp.swift  # Mac app entry
-│           ├── AppState.swift          # Global app state
-│           └── [other shared files]
-├── bin/                # Compiled binaries and builds
-│   ├── hanas/          # Server binary and data
-│   └── HaNas for Mac.app/  # Mac app bundle
-├── data/               # User file storage (auto-created)
-├── thumbnails/         # Thumbnail cache (auto-created)
-└── database.db         # SQLite database (auto-created)
+├── client/                        
+│   ├── HaNas for Ios/
+│   │   ├── HaNas/                 
+│   │   └── HaNas.xcodeproj/       
+│   └── HaNas for Mac/
+│       ├── HaNas/                 
+│       └── HaNas.xcodeproj/       
+├── server/                        
+│   ├── app.go                     
+│   ├── config.js                  
+│   ├── go.mod, go.sum             
+│   ├── index.html                 
+│   └── assets/                    
+├── web/                           
+│   ├── public/                    
+│   ├── src/                       
+│   │   ├── components/            
+│   │   ├── context/               
+│   │   ├── locales/               
+│   │   └── utils/                 
+│   ├── index.html                 
+│   └── vite.config.js             
+├── README.md                      
+├── README.ko.md
+└── README.ja.md
 ```
 
 ## 🔧 Technical Details
