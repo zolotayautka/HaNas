@@ -1084,9 +1084,6 @@ func DlFile(w http.ResponseWriter, r *http.Request) {
 //go:embed index.html
 var indexHtmlContent string
 
-//go:embed config.js
-var configJs string
-
 //go:embed assets/index.js
 var js_script string
 
@@ -1451,7 +1448,19 @@ func main() {
 	})
 	http.HandleFunc("/config.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
-		w.Write([]byte(configJs))
+		exePath, err := os.Executable()
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		dir := filepath.Dir(exePath)
+		configPath := filepath.Join(dir, "config.js")
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			http.Error(w, "config.js not found", http.StatusNotFound)
+			return
+		}
+		w.Write(data)
 	})
 	fmt.Printf("%s server started at :80\n", programName)
 	http.ListenAndServe(":80", nil)
