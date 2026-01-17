@@ -1,7 +1,7 @@
 
 # HaNas Web Client
 
-This is the React-based web frontend for HaNas, designed with a modern UI similar to the iOS client.
+This is the React-based web frontend for HaNas.
 
 ## Features
 
@@ -12,7 +12,6 @@ This is the React-based web frontend for HaNas, designed with a modern UI simila
 - Rename files
 - Generate shareable file links
 - Multi-select and batch operations
-- Modern iOS-style UI
 
 ## Getting Started
 
