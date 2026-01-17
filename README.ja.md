@@ -52,7 +52,7 @@ go build -o hanas
 
 2. ブラウザを開いて以下にアクセス:
 ```
-http://localhost:8080
+http://localhost:80
 ```
 
 3. 新しいアカウントを登録してファイル管理を開始しましょう！
@@ -85,7 +85,7 @@ http://localhost:8080
 ## ⚙️ 設定
 
 ### サーバー設定
-- **ポート**: デフォルトは `8080`（`main()` 関数で変更）
+- **ポート**: デフォルトは `80`（`main()` 関数で変更）
 - **データディレクトリ**: `./data`（ファイル保存場所）
 - **サムネイルディレクトリ**: `./thumbnails`（サムネイルキャッシュ）
 - **データベース**: `./database.db`（SQLiteデータベース）
@@ -129,27 +129,31 @@ http://localhost:8080
 
 ```
 HaNas/
-├── server/              # バックエンドサーバー
-│   ├── app.go          # すべてのAPIエンドポイントを含むメインサーバーロジック
-│   ├── go.mod          # Goモジュール依存関係
-│   ├── index.html      # Webインターフェース
-│   ├── index.js        # フロントエンドロジック
-│   └── i18n.js         # 国際化
-├── client/             # ネイティブクライアントアプリケーション
-│   ├── hanas for ios/  # iOSネイティブクライアント
-│   │   └── hanas for ios/
-│   │       ├── HaNas_iOSApp.swift      # アプリエントリーポイント
-│   │       ├── AppState.swift          # グローバルアプリ状態
-│   │       ├── ConfigManager.swift     # 設定ストレージ
-│   │       ├── ContentView.swift       # メインビュー
-│   │       ├── LoginView.swift         # 認証UI
-│   │       ├── FileListView.swift      # ファイルブラウザ
-│   │       └── exec.swift              # APIクライアント
-│   └── HaNas for Mac/  # macOSネイティブクライアント
-├── bin/                # コンパイル済みバイナリとビルド
-├── data/               # ユーザーファイルストレージ（自動作成）
-├── thumbnails/         # サムネイルキャッシュ（自動作成）
-└── database.db         # SQLiteデータベース（自動作成）
+├── client/                        
+│   ├── HaNas for Ios/
+│   │   ├── HaNas/                 
+│   │   └── HaNas.xcodeproj/       
+│   └── HaNas for Mac/
+│       ├── HaNas/                 
+│       └── HaNas.xcodeproj/       
+├── server/                        
+│   ├── app.go                     
+│   ├── config.js                  
+│   ├── go.mod, go.sum             
+│   ├── index.html                 
+│   └── assets/                    
+├── web/                           
+│   ├── public/                    
+│   ├── src/                       
+│   │   ├── components/            
+│   │   ├── context/               
+│   │   ├── locales/               
+│   │   └── utils/                 
+│   ├── index.html                 
+│   └── vite.config.js             
+├── README.md                      
+├── README.ko.md
+└── README.ja.md
 ```
 
 ## 🔧 技術詳細
