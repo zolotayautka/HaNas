@@ -1,103 +1,102 @@
+
 # HaNas Web Client
 
-React 기반의 HaNas 웹 프론트엔드입니다. iOS 클라이언트와 비슷한 스타일로 디자인되었습니다.
+This is the React-based web frontend for HaNas, designed with a modern UI similar to the iOS client.
 
-## 주요 기능
+## Features
 
-- 사용자 로그인 및 회원가입
-- 파일 및 폴더 관리
-- 파일 업로드 및 다운로드
-- 파일/폴더 복사, 잘라내기, 붙여넣기
-- 파일 이름 변경
-- 파일 공유 링크 생성
-- 다중 선택 및 일괄 작업
-- iOS 스타일의 모던한 UI
+- User login and registration
+- File and folder management
+- File upload and download
+- Copy, cut, and paste files/folders
+- Rename files
+- Generate shareable file links
+- Multi-select and batch operations
+- Modern iOS-style UI
 
-## 시작하기
+## Getting Started
 
-### 사전 요구사항
+### Prerequisites
 
-- Node.js 16 이상
-- npm 또는 yarn
+- Node.js 16 or higher
+- npm or yarn
 
-### 설치
+### Installation
 
 ```bash
 cd web
 npm install
 ```
 
-### 개발 서버 실행
+### Start Development Server
 
 ```bash
 npm run dev
 ```
 
-브라우저에서 http://localhost:3000 으로 접속합니다.
+Open your browser and go to http://localhost:3000
 
-개발 서버는 `/api` 경로를 `http://localhost:8080` 으로 프록시합니다.
-서버가 다른 포트에서 실행 중이라면 `vite.config.js` 파일에서 프록시 설정을 변경하세요.
+The development server proxies `/api` requests to `http://localhost:8080` by default.
+If your server runs on a different port, update the proxy settings in `vite.config.js`.
 
-### 프로덕션 빌드
+### Production Build
 
 ```bash
 npm run build
 ```
 
-빌드된 파일은 `dist` 폴더에 생성됩니다.
+The build output will be generated in the `dist` folder.
 
-### 빌드 미리보기
+### Preview Production Build
 
 ```bash
 npm run preview
 ```
 
-## 기술 스택
+## Tech Stack
 
-- **React 18** - UI 라이브러리
-- **React Router** - 라우팅
-- **Axios** - HTTP 클라이언트
-- **Vite** - 빌드 도구
+- **React 18** - UI library
+- **React Router** - Routing
+- **Axios** - HTTP client
+- **Vite** - Build tool
 
-## 프로젝트 구조
+## Project Structure
 
 ```
 web/
 ├── src/
-│   ├── components/         # React 컴포넌트
-│   │   ├── LoginView.jsx   # 로그인/회원가입 화면
-│   │   ├── FileListView.jsx # 파일 목록 화면
-│   │   └── FileItem.jsx    # 파일/폴더 아이템
+│   ├── components/         # React components
+│   │   ├── LoginView.jsx   # Login/Register screen
+│   │   ├── FileListView.jsx # File list screen
+│   │   └── FileItem.jsx    # File/Folder item
 │   ├── context/            # React Context
-│   │   └── AppContext.jsx  # 앱 상태 관리
-│   ├── utils/              # 유틸리티
-│   │   └── api.js          # API 클라이언트
-│   ├── App.jsx             # 메인 앱 컴포넌트
-│   ├── main.jsx            # 앱 진입점
-│   └── index.css           # 전역 스타일
-├── index.html              # HTML 템플릿
-├── vite.config.js          # Vite 설정
-└── package.json            # 패키지 정보
+│   │   └── AppContext.jsx  # App state management
+│   ├── utils/              # Utilities
+│   │   └── api.js          # API client
+│   ├── App.jsx             # Main app component
+│   ├── main.jsx            # App entry point
+│   └── index.css           # Global styles
+├── index.html              # HTML template
+├── vite.config.js          # Vite config
+└── package.json            # Package info
 ```
 
-## 서버 연동
+## Server Integration
 
-이 웹 클라이언트는 HaNas 서버와 함께 사용됩니다.
-서버를 먼저 실행한 후 웹 클라이언트를 실행하세요.
+This web client is used together with the HaNas server.
+Start the server first, then run the web client.
 
-서버 실행 방법은 프로젝트 루트의 README를 참조하세요.
+For server setup instructions, see the project root README.
 
-## 라이선스 및 저작권
+## License & Attribution
 
-### 사용된 오픈소스 컴포넌트
-
-이 프로젝트는 다음 오픈소스 아이콘을 사용합니다:
+### Open Source Components Used
 
 #### Material Design Icons
-- **저작권**: Copyright © Google LLC
-- **라이선스**: Apache License 2.0
-- **사용**: UI 아이콘 (SVG path 데이터)
-- **출처**: https://github.com/google/material-design-icons
+- **Copyright**: Copyright © Google LLC
+- **License**: Apache License 2.0
+- **Usage**: UI icons (SVG path data)
+- **Source**: https://github.com/google/material-design-icons
 
-Apache License 2.0의 전문은 다음 링크에서 확인할 수 있습니다:
+The full text of the Apache License 2.0 is available at:
 http://www.apache.org/licenses/LICENSE-2.0
