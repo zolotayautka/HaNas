@@ -223,6 +223,7 @@ func UploadFile(reader io.Reader) (uint, error) {
 		_, err = io.Copy(file, reader)
 		file.Close()
 		if err != nil {
+			os.Remove(fmt.Sprintf("%s/%d", dataDir, filename))
 			return 0, fmt.Errorf("cannot write file: %w", err)
 		}
 		break
