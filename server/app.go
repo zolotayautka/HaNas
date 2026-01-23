@@ -201,7 +201,7 @@ func getUserIDFromRequest(r *http.Request) (uint, error) {
 	return uint(userID), nil
 }
 
-func UploadFile(reader io.Reader) (uint, error) {
+func UploadFile(data []byte) (uint, error) {
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return 0, fmt.Errorf("cannot create data dir: %w", err)
 	}
@@ -220,10 +220,9 @@ func UploadFile(reader io.Reader) (uint, error) {
 			return 0, fmt.Errorf("cannot create file: %w", err)
 		}
 		uploadMutex.Unlock()
-		_, err = io.Copy(file, reader)
+		_, err = file.Write(data)
 		file.Close()
 		if err != nil {
-			os.Remove(fmt.Sprintf("%s/%d", dataDir, filename))
 			return 0, fmt.Errorf("cannot write file: %w", err)
 		}
 		break
@@ -282,8 +281,7 @@ func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID ui
 			nodeID = newNode.ID
 			return nil
 		}
-		reader := bytes.NewReader(data)
-		fid, err := UploadFile(reader)
+		fid, err := UploadFile(data)
 		if err != nil {
 			return err
 		}
@@ -356,9 +354,7 @@ func CopyNode(src Node, newOyaID uint, userID uint) (uint, error) {
 		}
 		return newNode.ID, nil
 	}
-	data := src.return_file()
-	reader := bytes.NewReader(data)
-	fid, err := UploadFile(reader)
+	fid, err := UploadFile(src.return_file())
 	if err != nil {
 		return 0, err
 	}
@@ -733,7 +729,7 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 	var data []byte
 	var uploadID string
 	if strings.HasPrefix(contentType, "multipart/form-data") {
-		err := r.ParseMultipartForm(1024 << 20)
+		err := r.ParseMultipartForm(1024 << 20) // 1024MB
 		if err != nil {
 			http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
 			return
@@ -767,62 +763,36 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 			if uploadID == "" {
 				uploadID = r.URL.Query().Get("upload_id")
 			}
-			pr, pw := io.Pipe()
-			go func() {
-				buf := make([]byte, 32*1024)
-				var readBytes int64
-				for {
-					n, err := file.Read(buf)
-					if n > 0 {
-						_, _ = pw.Write(buf[:n])
-						readBytes += int64(n)
-						if uploadID != "" && totalSize > 0 {
-							pct := int((readBytes * 100) / totalSize)
-							progressChannels.RLock()
-							ch, ok := progressChannels.m[uploadID]
-							progressChannels.RUnlock()
-							if ok {
-								select {
-								case ch <- pct:
-								default:
-								}
+			buf := make([]byte, 32*1024)
+			var b []byte
+			var readBytes int64
+			for {
+				n, err := file.Read(buf)
+				if n > 0 {
+					b = append(b, buf[:n]...)
+					readBytes += int64(n)
+					if uploadID != "" && totalSize > 0 {
+						pct := int((readBytes * 100) / totalSize)
+						progressChannels.RLock()
+						ch, ok := progressChannels.m[uploadID]
+						progressChannels.RUnlock()
+						if ok {
+							select {
+							case ch <- pct:
+							default:
 							}
 						}
 					}
-					if err != nil {
-						pw.CloseWithError(err)
+				}
+				if err != nil {
+					if err == io.EOF {
 						break
 					}
-				}
-			}()
-			_, err = UploadFile(pr)
-			pr.Close()
-			if err != nil {
-				http.Error(w, "upload_error: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			data = nil
-			nodeID, err := UploadNode(filename, nil, isDir, oyaPtr, userID)
-			if err != nil {
-				http.Error(w, "upload_error: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if uploadID != "" {
-				progressChannels.RLock()
-				ch, ok := progressChannels.m[uploadID]
-				progressChannels.RUnlock()
-				if ok {
-					select {
-					case ch <- 100:
-					default:
-					}
+					http.Error(w, "failed to read file: "+err.Error(), http.StatusInternalServerError)
+					return
 				}
 			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			resp := fmt.Sprintf(`{"success":true,"node_id":%d,"name":"%s"}`, nodeID, filename)
-			_, _ = w.Write([]byte(resp))
-			return
+			data = b
 		}
 	} else if strings.HasPrefix(contentType, "application/json") {
 		var body struct {
