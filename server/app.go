@@ -201,7 +201,7 @@ func getUserIDFromRequest(r *http.Request) (uint, error) {
 	return uint(userID), nil
 }
 
-func UploadFile(data []byte) (uint, error) {
+func UploadFile(reader io.Reader) (uint, error) {
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return 0, fmt.Errorf("cannot create data dir: %w", err)
 	}
@@ -220,9 +220,10 @@ func UploadFile(data []byte) (uint, error) {
 			return 0, fmt.Errorf("cannot create file: %w", err)
 		}
 		uploadMutex.Unlock()
-		_, err = file.Write(data)
+		_, err = io.Copy(file, reader)
 		file.Close()
 		if err != nil {
+			os.Remove(filepath)
 			return 0, fmt.Errorf("cannot write file: %w", err)
 		}
 		break
@@ -230,7 +231,7 @@ func UploadFile(data []byte) (uint, error) {
 	return filename, nil
 }
 
-func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID uint) (uint, error) {
+func UploadNode(filename string, reader io.Reader, isDir bool, oyaID *uint, userID uint) (uint, error) {
 	var nodeID uint
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var existing Node
@@ -258,7 +259,7 @@ func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID ui
 			if existing.IsDir {
 				return fmt.Errorf("folder_exists")
 			}
-			if !UpdateNode(existing.Fid, data) {
+			if !UpdateNode(existing.Fid, reader) {
 				return fmt.Errorf("failed to update existing node")
 			}
 			existing.UpdatedAt = time.Now()
@@ -281,7 +282,7 @@ func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID ui
 			nodeID = newNode.ID
 			return nil
 		}
-		fid, err := UploadFile(data)
+		fid, err := UploadFile(reader)
 		if err != nil {
 			return err
 		}
@@ -301,7 +302,7 @@ func UploadNode(filename string, data []byte, isDir bool, oyaID *uint, userID ui
 	return nodeID, err
 }
 
-func UpdateNode(fid *uint, data []byte) bool {
+func UpdateNode(fid *uint, reader io.Reader) bool {
 	if fid == nil {
 		return false
 	}
@@ -320,7 +321,7 @@ func UpdateNode(fid *uint, data []byte) bool {
 	if err != nil {
 		return false
 	}
-	_, err = file.Write(data)
+	_, err = io.Copy(file, reader)
 	file.Close()
 	if err != nil {
 		os.Remove(tmpPath)
@@ -354,7 +355,7 @@ func CopyNode(src Node, newOyaID uint, userID uint) (uint, error) {
 		}
 		return newNode.ID, nil
 	}
-	fid, err := UploadFile(src.return_file())
+	fid, err := UploadFile(bytes.NewReader(src.return_file()))
 	if err != nil {
 		return 0, err
 	}
@@ -716,6 +717,37 @@ func extractVideoFrame(videoPath string) (image.Image, error) {
 	return img, nil
 }
 
+type ProgressReader struct {
+	r        io.Reader
+	total    int64
+	read     int64
+	lastPct  int
+	uploadID string
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.r.Read(p)
+	if n > 0 {
+		pr.read += int64(n)
+		if pr.total > 0 && pr.uploadID != "" {
+			pct := int(float64(pr.read) * 100 / float64(pr.total))
+			if pct > pr.lastPct && pct < 100 {
+				pr.lastPct = pct
+				progressChannels.RLock()
+				ch, ok := progressChannels.m[pr.uploadID]
+				progressChannels.RUnlock()
+				if ok {
+					select {
+					case ch <- pct:
+					default:
+					}
+				}
+			}
+		}
+	}
+	return n, err
+}
+
 func UpFile(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromRequest(r)
 	if err != nil {
@@ -726,10 +758,10 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 	var filename string
 	var isDir bool
 	var oyaPtr *uint
-	var data []byte
+	var dataReader io.Reader
 	var uploadID string
 	if strings.HasPrefix(contentType, "multipart/form-data") {
-		err := r.ParseMultipartForm(1024 << 20) // 1024MB
+		err := r.ParseMultipartForm(1024 << 20)
 		if err != nil {
 			http.Error(w, "failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
 			return
@@ -749,50 +781,25 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !isDir {
-			file, fh, err := r.FormFile("file")
+			file, _, err := r.FormFile("file")
 			if err != nil {
 				http.Error(w, "missing file: "+err.Error(), http.StatusBadRequest)
 				return
 			}
 			defer file.Close()
-			totalSize := int64(0)
-			if fh != nil {
-				totalSize = fh.Size
-			}
 			uploadID = r.FormValue("upload_id")
 			if uploadID == "" {
 				uploadID = r.URL.Query().Get("upload_id")
 			}
-			buf := make([]byte, 32*1024)
-			var b []byte
-			var readBytes int64
-			for {
-				n, err := file.Read(buf)
-				if n > 0 {
-					b = append(b, buf[:n]...)
-					readBytes += int64(n)
-					if uploadID != "" && totalSize > 0 {
-						pct := int((readBytes * 100) / totalSize)
-						progressChannels.RLock()
-						ch, ok := progressChannels.m[uploadID]
-						progressChannels.RUnlock()
-						if ok {
-							select {
-							case ch <- pct:
-							default:
-							}
-						}
-					}
-				}
-				if err != nil {
-					if err == io.EOF {
-						break
-					}
-					http.Error(w, "failed to read file: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
+			var totalSize int64
+			if fh := r.MultipartForm.File["file"]; len(fh) > 0 && fh[0] != nil {
+				totalSize = fh[0].Size
 			}
-			data = b
+			if totalSize > 0 && uploadID != "" {
+				dataReader = &ProgressReader{r: file, total: totalSize, uploadID: uploadID}
+			} else {
+				dataReader = file
+			}
 		}
 	} else if strings.HasPrefix(contentType, "application/json") {
 		var body struct {
@@ -810,12 +817,7 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 		isDir = body.IsDir
 		oyaPtr = body.OyaID
 		if !isDir && body.DataBase64 != "" {
-			d, err := base64.StdEncoding.DecodeString(body.DataBase64)
-			if err != nil {
-				http.Error(w, "failed to decode base64: "+err.Error(), http.StatusBadRequest)
-				return
-			}
-			data = d
+			dataReader = base64.NewDecoder(base64.StdEncoding, strings.NewReader(body.DataBase64))
 		}
 	} else {
 		http.Error(w, "unsupported content type: "+contentType, http.StatusUnsupportedMediaType)
@@ -839,7 +841,7 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	nodeID, err := UploadNode(filename, data, isDir, oyaPtr, userID)
+	nodeID, err := UploadNode(filename, dataReader, isDir, oyaPtr, userID)
 	if err != nil {
 		if err.Error() == "folder_exists" {
 			http.Error(w, "folder_exists", http.StatusConflict)
