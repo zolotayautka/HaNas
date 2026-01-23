@@ -41,11 +41,6 @@ var jwtSecret string
 
 var db *gorm.DB
 
-var progressChannels = struct {
-	sync.RWMutex
-	m map[string]chan int
-}{m: make(map[string]chan int)}
-
 var (
 	fileLocks = struct {
 		sync.RWMutex
@@ -717,37 +712,6 @@ func extractVideoFrame(videoPath string) (image.Image, error) {
 	return img, nil
 }
 
-type ProgressReader struct {
-	r        io.Reader
-	total    int64
-	read     int64
-	lastPct  int
-	uploadID string
-}
-
-func (pr *ProgressReader) Read(p []byte) (int, error) {
-	n, err := pr.r.Read(p)
-	if n > 0 {
-		pr.read += int64(n)
-		if pr.total > 0 && pr.uploadID != "" {
-			pct := int(float64(pr.read) * 100 / float64(pr.total))
-			if pct > pr.lastPct && pct < 100 {
-				pr.lastPct = pct
-				progressChannels.RLock()
-				ch, ok := progressChannels.m[pr.uploadID]
-				progressChannels.RUnlock()
-				if ok {
-					select {
-					case ch <- pct:
-					default:
-					}
-				}
-			}
-		}
-	}
-	return n, err
-}
-
 func UpFile(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromRequest(r)
 	if err != nil {
@@ -759,7 +723,6 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 	var isDir bool
 	var oyaPtr *uint
 	var dataReader io.Reader
-	var uploadID string
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		err := r.ParseMultipartForm(1024 << 20)
 		if err != nil {
@@ -787,19 +750,7 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			defer file.Close()
-			uploadID = r.FormValue("upload_id")
-			if uploadID == "" {
-				uploadID = r.URL.Query().Get("upload_id")
-			}
-			var totalSize int64
-			if fh := r.MultipartForm.File["file"]; len(fh) > 0 && fh[0] != nil {
-				totalSize = fh[0].Size
-			}
-			if totalSize > 0 && uploadID != "" {
-				dataReader = &ProgressReader{r: file, total: totalSize, uploadID: uploadID}
-			} else {
-				dataReader = file
-			}
+			dataReader = file
 		}
 	} else if strings.HasPrefix(contentType, "application/json") {
 		var body struct {
@@ -850,67 +801,10 @@ func UpFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "upload_error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if uploadID != "" {
-		progressChannels.RLock()
-		ch, ok := progressChannels.m[uploadID]
-		progressChannels.RUnlock()
-		if ok {
-			select {
-			case ch <- 100:
-			default:
-			}
-		}
-	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	resp := fmt.Sprintf(`{"success":true,"node_id":%d,"name":"%s"}`, nodeID, filename)
 	_, _ = w.Write([]byte(resp))
-}
-
-func UploadProgressSSE(w http.ResponseWriter, r *http.Request) {
-	uploadID := r.URL.Query().Get("upload_id")
-	if uploadID == "" {
-		http.Error(w, "upload_id query parameter is required", http.StatusBadRequest)
-		return
-	}
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	ch := make(chan int, 10)
-	progressChannels.Lock()
-	progressChannels.m[uploadID] = ch
-	progressChannels.Unlock()
-	defer func() {
-		progressChannels.Lock()
-		delete(progressChannels.m, uploadID)
-		progressChannels.Unlock()
-		close(ch)
-	}()
-	fmt.Fprintf(w, "data: %d\n\n", 0)
-	flusher.Flush()
-	for {
-		select {
-		case <-r.Context().Done():
-			return
-		case pct, ok := <-ch:
-			if !ok {
-				return
-			}
-			fmt.Fprintf(w, "data: %d\n\n", pct)
-			flusher.Flush()
-			if pct >= 100 {
-				return
-			}
-		case <-time.After(30 * time.Second):
-			fmt.Fprint(w, ": keepalive\n\n")
-			flusher.Flush()
-		}
-	}
 }
 
 func CpFile(w http.ResponseWriter, r *http.Request) {
@@ -1419,7 +1313,6 @@ func main() {
 	http.HandleFunc("/thumbnail/", authMiddleware(GetThumbnail))
 	http.HandleFunc("/node/", authMiddleware(GetJson))
 	http.HandleFunc("/upload", authMiddleware(UpFile))
-	http.HandleFunc("/upload/progress", UploadProgressSSE)
 	http.HandleFunc("/copy", authMiddleware(CpFile))
 	http.HandleFunc("/move", authMiddleware(MvFile))
 	http.HandleFunc("/rename", authMiddleware(RnFile))
